@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
+/* Vendorisé depuis shadcn/dist/tailwind.css (le paquet CLI `shadcn` traînait
+   un zod@3 qui cassait les types de @hookform/resolvers). À re-copier si un
+   futur `shadcn add` le réintroduit en dépendance. */
+@import "./shadcn-tailwind.css";
 
 @theme inline {
   --color-background: var(--background);
