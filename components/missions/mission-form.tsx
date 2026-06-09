@@ -34,6 +34,7 @@ type MissionFormProps = {
   defaultProjetId?: string;
   defaultValues?: Partial<MissionFormValues>;
   submitLabel?: string;
+  pendingLabel?: string;
   onSubmit: (values: MissionFormValues) => Promise<ActionResult>;
   onSuccess?: () => void;
 };
@@ -44,6 +45,7 @@ export function MissionForm({
   defaultProjetId,
   defaultValues,
   submitLabel = "Ajouter",
+  pendingLabel = mode === "edit" ? "Enregistrement…" : "Ajout en cours…",
   onSubmit,
   onSuccess,
 }: MissionFormProps) {
@@ -95,9 +97,10 @@ export function MissionForm({
           autoComplete="off"
           placeholder="Derush interview, maquette accueil…"
           aria-invalid={!!errors.titre}
+          aria-describedby={errors.titre ? `${uid}-titre-error` : undefined}
           {...form.register("titre")}
         />
-        <FieldError message={errors.titre?.message} />
+        <FieldError id={`${uid}-titre-error`} message={errors.titre?.message} />
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -105,6 +108,7 @@ export function MissionForm({
         <NativeSelect
           id={`${uid}-projet`}
           aria-invalid={!!errors.projetId}
+          aria-describedby={errors.projetId ? `${uid}-projet-error` : undefined}
           {...form.register("projetId")}
         >
           {[...byClient.entries()].map(([clientNom, options]) => (
@@ -117,7 +121,10 @@ export function MissionForm({
             </optgroup>
           ))}
         </NativeSelect>
-        <FieldError message={errors.projetId?.message} />
+        <FieldError
+          id={`${uid}-projet-error`}
+          message={errors.projetId?.message}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -181,7 +188,7 @@ export function MissionForm({
 
       <div className="flex items-center justify-end gap-2 pt-1">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Ajout en cours…" : submitLabel}
+          {isSubmitting ? pendingLabel : submitLabel}
         </Button>
       </div>
     </form>

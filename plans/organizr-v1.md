@@ -180,7 +180,7 @@ Livré : Next 15.5.19 / React 19.1 / Tailwind v4 (CNA via dossier temp, package 
 
 **Tâches**
 1. /verify global : `pnpm lint && pnpm test && pnpm build && pnpm e2e` ; `grep -rn "@/lib/db" app components lib/actions lib/validation` → 0 ; `pnpm build` ne crée pas `.pglite/`.
-2. `vercel link` (projet `organizr`) ; provisionner Neon via marketplace ; **vérifier le NOM exact de la variable injectée** (DATABASE_URL vs POSTGRES_URL…) et qu'elle couvre production+preview+development ; `vercel env pull .env.local`.
+2. `vercel link` (projet `organizr`) ; provisionner Neon via marketplace ; **vérifier le NOM exact de la variable injectée** (DATABASE_URL vs POSTGRES_URL…) et qu'elle couvre production+preview+development ; `vercel env pull .env.local`. **Poser `TZ=Europe/Paris` sur Vercel** : la pastille « aujourd'hui » et le mois par défaut dérivent de l'horloge du serveur (UTC sinon → décalage entre minuit et 2h, et mauvais mois le 1er).
 3. Migrations : drizzle-kit ne lit PAS `.env.local` seul → `drizzle.config.ts` charge dotenv (`.env.local` puis `.env`) ; `pnpm db:migrate` contre Neon **deux fois** (2e run = no-op) — idéalement d'abord sur une branche Neon de dev.
 4. **Avant prod** : exercer le driver neon-http réellement — `pnpm dev` local avec `DATABASE_URL` Neon (ou deploy preview) + parcours création mission complet (premier exercice réel du chemin neon-http).
 5. `vercel deploy --prod` ; vérifier l'URL : créer une mission de bout en bout, visible au calendrier.

@@ -29,9 +29,9 @@ export function AppHeader() {
             </kbd>
             nouvelle mission
           </span>
-          <Button size="sm" onClick={openQuickAdd}>
+          <Button size="sm" onClick={openQuickAdd} aria-label="Nouvelle mission">
             <Plus aria-hidden data-icon="inline-start" />
-            Nouvelle mission
+            <span className="hidden sm:inline">Nouvelle mission</span>
           </Button>
         </div>
       </div>

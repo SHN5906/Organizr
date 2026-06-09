@@ -68,7 +68,9 @@ Badge statut = `StatutDot` + label texte, **sans fond pill**.
 - deadline mission : **○ pastille creuse** + titre
 - deadline projet : **◇ losange creux** + titre projet
 - « aujourd'hui » : numéro du jour sur pastille encre (cercle plein, chiffre blanc)
-- jours hors-mois : numéro `text-muted-foreground/50`, fond `--muted` léger
+- jours hors-mois : numéro `text-muted-foreground` **opaque** (AA 4,9:1 — jamais
+  d'alpha sur du texte), l'atténuation vient du fond `--muted` léger et de
+  l'absence de `font-medium`
 
 ## 6. Motion
 

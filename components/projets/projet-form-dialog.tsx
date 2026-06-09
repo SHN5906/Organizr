@@ -96,9 +96,13 @@ export function ProjetFormDialog({
               autoComplete="off"
               placeholder="Refonte site, aftermovie…"
               aria-invalid={!!errors.titre}
+              aria-describedby={errors.titre ? `${uid}-titre-error` : undefined}
               {...form.register("titre")}
             />
-            <FieldError message={errors.titre?.message} />
+            <FieldError
+              id={`${uid}-titre-error`}
+              message={errors.titre?.message}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -107,6 +111,9 @@ export function ProjetFormDialog({
               <NativeSelect
                 id={`${uid}-client`}
                 aria-invalid={!!errors.clientId}
+                aria-describedby={
+                  errors.clientId ? `${uid}-client-error` : undefined
+                }
                 {...form.register("clientId")}
               >
                 {clients.map((c) => (
@@ -115,7 +122,10 @@ export function ProjetFormDialog({
                   </option>
                 ))}
               </NativeSelect>
-              <FieldError message={errors.clientId?.message} />
+              <FieldError
+                id={`${uid}-client-error`}
+                message={errors.clientId?.message}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={`${uid}-type`}>Type</Label>
