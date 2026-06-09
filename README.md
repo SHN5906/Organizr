@@ -4,6 +4,9 @@ Application solo pour planifier le travail de montage vidéo et organiser la
 production de sites web clients. Ajouter une mission en quelques secondes,
 visualiser tous les projets et deadlines sur un calendrier mensuel monochrome.
 
+**Production** : https://organizr-zeta.vercel.app (Vercel `shn5906s-projects` +
+Neon `neon-coffee-pocket`). Raccourci : `n` → nouvelle mission.
+
 ## Stack
 
 Next.js 15 (App Router, React 19, Server Actions) · TypeScript strict · pnpm ·
