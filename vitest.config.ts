@@ -20,6 +20,11 @@ export default defineConfig({
           name: "unit",
           environment: "node",
           include: ["tests/unit/**/*.test.ts"],
+          env: {
+            // In-memory PGlite for data-layer tests; never touches Neon.
+            PGLITE_DATA_DIR: "memory://",
+            DATABASE_URL: "",
+          },
         },
       },
       {
