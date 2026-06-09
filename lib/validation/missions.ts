@@ -40,6 +40,21 @@ export const missionDeleteSchema = z.object({
   id: z.uuid(),
 });
 
+/**
+ * Schéma du FORMULAIRE (RHF) : valeurs contrôlées, jamais undefined.
+ * Le serveur re-valide avec missionCreate/UpdateSchema.
+ */
+export const missionFormSchema = z.object({
+  projetId: z.uuid("Projet requis"),
+  titre: z.string().trim().min(1, "Champ requis"),
+  statut: z.enum(STATUTS),
+  datePlanifiee: z.iso.date("Date invalide").nullable(),
+  deadline: z.iso.date("Date invalide").nullable(),
+  notes: z.string(),
+});
+
+export type MissionFormValues = z.infer<typeof missionFormSchema>;
+
 export type MissionCreateInput = z.infer<typeof missionCreateSchema>;
 export type MissionUpdateInput = z.infer<typeof missionUpdateSchema>;
 export type MissionStatutInput = z.infer<typeof missionStatutSchema>;
