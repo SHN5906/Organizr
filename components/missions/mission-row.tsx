@@ -33,19 +33,29 @@ import {
 } from "@/lib/validation/labels";
 
 function StatutSelect({ mission }: { mission: MissionWithProjet }) {
-  const [pending, startTransition] = React.useTransition();
+  const [, startTransition] = React.useTransition();
+  // Optimiste : sans lui, le select contrôlé re-snapperait sur l'ancienne
+  // valeur pendant tout l'aller-retour serveur.
+  const [statut, setOptimisticStatut] = React.useOptimistic(mission.statut);
+  const [error, setError] = React.useState<string | null>(null);
+
   return (
     <span className="inline-flex items-center gap-2">
-      <StatutDot statut={mission.statut} />
+      <StatutDot statut={statut} />
       <NativeSelect
         aria-label={`Statut de « ${mission.titre} »`}
         className="w-32"
-        value={mission.statut}
-        disabled={pending}
+        value={statut}
         onChange={(e) => {
-          const statut = e.target.value as Statut;
+          const next = e.target.value as Statut;
+          setError(null);
           startTransition(async () => {
-            await updateMissionStatutAction({ id: mission.id, statut });
+            setOptimisticStatut(next);
+            const result = await updateMissionStatutAction({
+              id: mission.id,
+              statut: next,
+            });
+            if (!result.ok) setError(result.error);
           });
         }}
       >
@@ -55,6 +65,11 @@ function StatutSelect({ mission }: { mission: MissionWithProjet }) {
           </option>
         ))}
       </NativeSelect>
+      {error && (
+        <span role="alert" className="text-xs font-medium">
+          {error}
+        </span>
+      )}
     </span>
   );
 }
@@ -68,6 +83,7 @@ export function MissionRow({
 }) {
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [pendingDelete, startDelete] = React.useTransition();
   const termine = mission.statut === "termine";
 
@@ -92,18 +108,17 @@ export function MissionRow({
         {mission.datePlanifiee && (
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays aria-hidden className="size-3.5" />
+            <span className="sr-only">Planifiée le</span>
             {formatDayFr(mission.datePlanifiee, "EEE d MMM")}
           </span>
         )}
         {mission.deadline && (
-          <span
-            className="inline-flex items-center gap-1.5"
-            title="Deadline"
-          >
+          <span className="inline-flex items-center gap-1.5">
             <span
               aria-hidden
               className="inline-block size-2 rounded-full border border-foreground"
             />
+            <span className="sr-only">Deadline le</span>
             {formatDayFr(mission.deadline, "EEE d MMM")}
           </span>
         )}
@@ -160,7 +175,13 @@ export function MissionRow({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          setDeleteOpen(open);
+          if (!open) setDeleteError(null);
+        }}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Supprimer la mission ?</DialogTitle>
@@ -168,6 +189,11 @@ export function MissionRow({
               « {mission.titre} » sera définitivement supprimée.
             </DialogDescription>
           </DialogHeader>
+          {deleteError && (
+            <p role="alert" className="text-xs font-medium">
+              {deleteError}
+            </p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Annuler
@@ -176,7 +202,11 @@ export function MissionRow({
               disabled={pendingDelete}
               onClick={() =>
                 startDelete(async () => {
-                  await deleteMissionAction({ id: mission.id });
+                  const result = await deleteMissionAction({ id: mission.id });
+                  if (!result.ok) {
+                    setDeleteError(result.error);
+                    return;
+                  }
                   setDeleteOpen(false);
                 })
               }

@@ -71,9 +71,10 @@ export function ClientFormDialog({
               autoComplete="off"
               placeholder="ACME Studio"
               aria-invalid={!!errors.nom}
+              aria-describedby={errors.nom ? `${uid}-nom-error` : undefined}
               {...form.register("nom")}
             />
-            <FieldError message={errors.nom?.message} />
+            <FieldError id={`${uid}-nom-error`} message={errors.nom?.message} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={`${uid}-contact`}>Contact</Label>

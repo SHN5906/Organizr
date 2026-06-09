@@ -26,15 +26,29 @@ export function MissionFilters({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [, startTransition] = React.useTransition();
+  // Optimiste : les selects contrôlés par l'URL re-snapperaient sur
+  // l'ancienne valeur pendant la navigation serveur (pénible au clavier,
+  // où chaque flèche déclenche un change).
+  const [optimistic, setOptimistic] = React.useOptimistic(params);
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(searchParams);
     if (value) next.set(key, value);
     else next.delete(key);
-    router.push(`${pathname}?${next.toString()}`, { scroll: false });
+    startTransition(() => {
+      setOptimistic({
+        ...optimistic,
+        type: key === "type" ? (value as DashboardParams["type"]) || undefined : optimistic.type,
+        statut: key === "statut" ? (value as DashboardParams["statut"]) || undefined : optimistic.statut,
+        clientId: key === "client" ? value || undefined : optimistic.clientId,
+        sort: key === "sort" ? (value as DashboardParams["sort"]) : optimistic.sort,
+      });
+      router.push(`${pathname}?${next.toString()}`, { scroll: false });
+    });
   }
 
-  const sortAsc = params.sort === "deadline_asc";
+  const sortAsc = optimistic.sort === "deadline_asc";
 
   return (
     <div className="flex flex-wrap items-end gap-3">
@@ -45,7 +59,7 @@ export function MissionFilters({
         <NativeSelect
           id="filtre-type"
           className="w-40"
-          value={params.type ?? ""}
+          value={optimistic.type ?? ""}
           onChange={(e) => setParam("type", e.target.value)}
         >
           <option value="">Tous</option>
@@ -67,7 +81,7 @@ export function MissionFilters({
         <NativeSelect
           id="filtre-statut"
           className="w-36"
-          value={params.statut ?? ""}
+          value={optimistic.statut ?? ""}
           onChange={(e) => setParam("statut", e.target.value)}
         >
           <option value="">Tous</option>
@@ -89,7 +103,7 @@ export function MissionFilters({
         <NativeSelect
           id="filtre-client"
           className="w-44"
-          value={params.clientId ?? ""}
+          value={optimistic.clientId ?? ""}
           onChange={(e) => setParam("client", e.target.value)}
         >
           <option value="">Tous</option>

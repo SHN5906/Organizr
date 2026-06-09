@@ -70,18 +70,16 @@ export default async function ProjetsPage() {
                         </div>
                         <div className="text-xs text-muted-foreground tabular-nums">
                           {p.deadline ? (
-                            <span
-                              className="inline-flex items-center gap-1.5"
-                              title="Deadline projet"
-                            >
+                            <span className="inline-flex items-center gap-1.5">
                               <span
                                 aria-hidden
                                 className="inline-block size-2 rotate-45 border border-foreground"
                               />
+                              <span className="sr-only">Deadline le</span>
                               {formatDayFr(p.deadline)}
                             </span>
                           ) : (
-                            <span aria-hidden>—</span>
+                            <span aria-hidden>–</span>
                           )}
                         </div>
                         <StatutBadge

@@ -55,15 +55,17 @@ function CellContent({
             ? "rounded-full bg-foreground font-medium text-background"
             : day.inMonth
               ? "font-medium text-foreground"
-              : "text-muted-foreground/60",
+              : "text-muted-foreground",
         )}
       >
         {day.dayOfMonth}
       </span>
       {items.length > 0 && (
-        <ul className="mt-0.5 flex flex-col gap-0.5">
+        // Pas de <ul> ici : ce contenu vit parfois dans un <button>
+        // (phrasing content uniquement) — des <span> stylés suffisent.
+        <span className="mt-0.5 flex flex-col gap-0.5">
           {items.slice(0, MAX_VISIBLE).map((item, i) => (
-            <li
+            <span
               key={`${item.kind}-${item.missionId ?? item.projetId}-${i}`}
               className={cn(
                 "flex items-center gap-1.5 text-xs leading-tight",
@@ -72,12 +74,12 @@ function CellContent({
             >
               <CalendarMarker kind={item.kind} />
               <span className="hidden truncate sm:inline">{item.titre}</span>
-            </li>
+            </span>
           ))}
           {overflow > 0 && (
-            <li className="text-xs text-muted-foreground">+{overflow}</li>
+            <span className="text-xs text-muted-foreground">+{overflow}</span>
           )}
-        </ul>
+        </span>
       )}
     </>
   );
@@ -95,8 +97,10 @@ export function MonthGrid({
 
   return (
     <>
+      {/* Sémantique table STATIQUE (pas role=grid : ce widget n'implémente
+          pas le modèle clavier des grilles ARIA — Tab + Entrée suffisent). */}
       <div
-        role="grid"
+        role="table"
         aria-label="Calendrier du mois"
         className="border-border-strong overflow-hidden rounded-md border"
       >
@@ -123,7 +127,7 @@ export function MonthGrid({
               const interactive = items.length > 0;
               return (
                 <div
-                  role="gridcell"
+                  role="cell"
                   key={day.date}
                   data-date={day.date}
                   className={cn(
