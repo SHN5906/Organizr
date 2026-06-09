@@ -48,3 +48,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 .env*.local
+
+# artefacts MCP playwright (sessions agent)
+.playwright-mcp/
