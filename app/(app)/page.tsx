@@ -11,6 +11,7 @@ import {
   parseMonthParam,
 } from "@/lib/calendar";
 import { getCalendarItems } from "@/lib/data/missions";
+import { todayInAppZone } from "@/lib/format";
 import type { SearchParams } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function HomePage({
 }) {
   const sp = await searchParams;
   const monthParam = Array.isArray(sp.month) ? sp.month[0] : sp.month;
-  const today = new Date();
+  const today = todayInAppZone();
   const month = parseMonthParam(monthParam, today);
   const { start, end } = monthGridInterval(month);
   const items = await getCalendarItems(start, end);
