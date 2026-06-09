@@ -1,0 +1,10 @@
+[ 1261550ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3300/dashboard?_rsc=RgaIvIOO0R9gzcsl:0
+[ 1261550ms] [ERROR] Failed to fetch RSC payload for http://localhost:3300/dashboard. Falling back to browser navigation. TypeError: Failed to fetch
+    at y (http://localhost:3300/_next/static/chunks/436-743d75b3eb77ce3e.js:1:7276)
+    at async _ (http://localhost:3300/_next/static/chunks/436-743d75b3eb77ce3e.js:1:6134)
+    at async Object.o [as task] (http://localhost:3300/_next/static/chunks/436-743d75b3eb77ce3e.js:1:166521) @ http://localhost:3300/_next/static/chunks/436-743d75b3eb77ce3e.js:0
+[ 1262405ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3300/?_rsc=RgaIvIOO0R9gzcsl:0
+[ 1262405ms] [ERROR] Failed to fetch RSC payload for http://localhost:3300/. Falling back to browser navigation. TypeError: Failed to fetch
+    at y (http://localhost:3300/_next/static/chunks/436-743d75b3eb77ce3e.js:1:7276)
+    at async _ (http://localhost:3300/_next/static/chunks/436-743d75b3eb77ce3e.js:1:6134)
+    at async Object.o [as task] (http://localhost:3300/_next/static/chunks/436-743d75b3eb77ce3e.js:1:166521) @ http://localhost:3300/_next/static/chunks/436-743d75b3eb77ce3e.js:0
