@@ -1,5 +1,6 @@
 "use server";
 
+import { requireOwner } from "@/lib/auth/guards";
 import {
   createMission,
   deleteMission,
@@ -18,6 +19,7 @@ import type { ActionResult } from "./types";
 export async function createMissionAction(
   input: unknown,
 ): Promise<ActionResult> {
+  await requireOwner();
   return runAction(missionCreateSchema, input, async (data) => {
     await createMission(data);
   });
@@ -26,6 +28,7 @@ export async function createMissionAction(
 export async function updateMissionAction(
   input: unknown,
 ): Promise<ActionResult> {
+  await requireOwner();
   return runAction(missionUpdateSchema, input, async (data) => {
     const updated = await updateMission(data);
     if (updated === null) return false;
@@ -35,6 +38,7 @@ export async function updateMissionAction(
 export async function updateMissionStatutAction(
   input: unknown,
 ): Promise<ActionResult> {
+  await requireOwner();
   return runAction(missionStatutSchema, input, async (data) => {
     const updated = await updateMissionStatut(data.id, data.statut);
     if (updated === null) return false;
@@ -44,6 +48,7 @@ export async function updateMissionStatutAction(
 export async function deleteMissionAction(
   input: unknown,
 ): Promise<ActionResult> {
+  await requireOwner();
   return runAction(missionDeleteSchema, input, async (data) => {
     await deleteMission(data.id);
   });
