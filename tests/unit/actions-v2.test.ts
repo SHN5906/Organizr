@@ -35,6 +35,7 @@ import {
 } from "@/lib/auth/session";
 import { createClient } from "@/lib/data/clients";
 import { createInvitation } from "@/lib/data/client-access";
+import { getBrief } from "@/lib/data/briefs";
 import { listCommandesForClient } from "@/lib/data/portal/commandes";
 import { getFacture } from "@/lib/data/factures";
 import { listMissions } from "@/lib/data/missions";
@@ -132,6 +133,62 @@ describe("createCommandeAction", () => {
       tipEuros: -1,
     });
     expect(negatif.ok).toBe(false);
+  });
+
+  it("FormData : enregistre lien SwissTransfer + brief PDF (signature vérifiée)", async () => {
+    const client = await seedClientWithSession();
+    const fd = new FormData();
+    fd.set(
+      "payload",
+      JSON.stringify({
+        lignes: [{ type: "video_longue", quantite: 1 }],
+        lienSwisstransfer: "https://www.swisstransfer.com/d/abc123",
+      }),
+    );
+    fd.set(
+      "brief",
+      new File([Buffer.from("%PDF-1.4\nfake\n%%EOF")], "brief juin.pdf", {
+        type: "application/pdf",
+      }),
+    );
+    const result = await createCommandeAction(fd);
+    expect(result.ok).toBe(true);
+
+    const [commande] = await listCommandesForClient(client.id);
+    expect(commande.lienSwisstransfer).toBe(
+      "https://www.swisstransfer.com/d/abc123",
+    );
+    expect(commande.briefNom).toBe("brief juin.pdf");
+    const brief = await getBrief(commande.id);
+    expect(Buffer.from(brief!.contenu, "base64").toString()).toContain(
+      "%PDF-1.4",
+    );
+  });
+
+  it("refuse un fichier qui n'est pas un vrai PDF et un lien non-https", async () => {
+    await seedClientWithSession();
+    const fd = new FormData();
+    fd.set(
+      "payload",
+      JSON.stringify({ lignes: [{ type: "video_longue", quantite: 1 }] }),
+    );
+    fd.set(
+      "brief",
+      new File([Buffer.from("<html>pas un pdf</html>")], "brief.pdf", {
+        type: "application/pdf",
+      }),
+    );
+    const faux = await createCommandeAction(fd);
+    expect(faux.ok).toBe(false);
+    if (!faux.ok) expect(faux.fieldErrors?.brief?.[0]).toMatch(/pdf/i);
+
+    const lienHttp = await createCommandeAction({
+      lignes: [{ type: "video_longue", quantite: 1 }],
+      lienSwisstransfer: "http://pas-https.com/x",
+    });
+    expect(lienHttp.ok).toBe(false);
+
+    expect(await listMissions({})).toHaveLength(0);
   });
 
   it("rejette quantité hors bornes, type inconnu, commande vide", async () => {

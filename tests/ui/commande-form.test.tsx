@@ -54,7 +54,34 @@ describe("CommandeForm", () => {
 
     await userEvent.click(screen.getByRole("button", { name: SUBMIT }));
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({ tipEuros: 6 });
+    const fd = onSubmit.mock.calls[0][0] as FormData;
+    expect(JSON.parse(String(fd.get("payload")))).toMatchObject({
+      tipEuros: 6,
+    });
+  });
+
+  it("envoie le lien SwissTransfer et le brief PDF dans le FormData", async () => {
+    const onSubmit = vi
+      .fn()
+      .mockResolvedValue({ ok: true, data: { numero: 4 } });
+    render(<CommandeForm moisLabel="juin 2026" onSubmit={onSubmit} />);
+
+    await userEvent.type(
+      screen.getByLabelText(/lien swisstransfer/i),
+      "https://www.swisstransfer.com/d/abc123",
+    );
+    const file = new File(["%PDF-1.4 fake"], "brief.pdf", {
+      type: "application/pdf",
+    });
+    await userEvent.upload(screen.getByLabelText(/brief pdf/i), file);
+    expect(screen.getByText(/brief\.pdf/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: SUBMIT }));
+    const fd = onSubmit.mock.calls[0][0] as FormData;
+    expect(JSON.parse(String(fd.get("payload")))).toMatchObject({
+      lienSwisstransfer: "https://www.swisstransfer.com/d/abc123",
+    });
+    expect((fd.get("brief") as File).name).toBe("brief.pdf");
   });
 
   it("bloque une quantité hors bornes", async () => {
@@ -85,13 +112,15 @@ describe("CommandeForm", () => {
     await userEvent.click(screen.getByRole("button", { name: SUBMIT }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    const payload = onSubmit.mock.calls[0][0] as {
+    const fd = onSubmit.mock.calls[0][0] as FormData;
+    const payload = JSON.parse(String(fd.get("payload"))) as {
       lignes: Array<Record<string, unknown>>;
     };
     expect(payload.lignes).toEqual([
       { type: "reel_simple", quantite: 3, brief: "3 reels événement" },
     ]);
-    expect(JSON.stringify(payload)).not.toMatch(/prix|total/i);
+    expect(String(fd.get("payload"))).not.toMatch(/prix|total/i);
+    expect(fd.get("brief")).toBeNull();
 
     expect(
       await screen.findByText(/commande #7 ajoutée à juin 2026/i),

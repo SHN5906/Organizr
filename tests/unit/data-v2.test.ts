@@ -23,7 +23,8 @@ import {
   listFacturesForPeriode,
 } from "@/lib/data/factures";
 import { createProjet } from "@/lib/data/projets";
-import { periodeBounds } from "@/lib/format";
+import { getBrief, saveBrief } from "@/lib/data/briefs";
+import { periodeBounds, periodeOf } from "@/lib/format";
 
 const LIGNE_3_SIMPLES = {
   type: "reel_simple" as const,
@@ -128,6 +129,42 @@ describe("commandes", () => {
       { ...LIGNE_1_LONGUE, totalCents: 7000 },
     ]);
     expect(c2.numero).toBe(2);
+  });
+
+  it("enregistre le lien SwissTransfer et le brief PDF (hors des listes)", async () => {
+    const client = await seedClient();
+    const commande = await createCommandeWithLignes(
+      client.id,
+      [{ ...LIGNE_1_LONGUE, totalCents: 7000 }],
+      0,
+      "https://www.swisstransfer.com/d/abc123",
+    );
+    expect(commande.lienSwisstransfer).toBe(
+      "https://www.swisstransfer.com/d/abc123",
+    );
+
+    const contenu = Buffer.from("%PDF-1.4\nfake\n%%EOF").toString("base64");
+    await saveBrief(commande.id, {
+      nom: "brief-juin.pdf",
+      taille: 18,
+      contenu,
+    });
+
+    // Les listes portent les métadonnées (nom) mais JAMAIS le contenu.
+    const [row] = await listCommandesForClient(client.id);
+    expect(row.briefNom).toBe("brief-juin.pdf");
+    expect(JSON.stringify(row)).not.toContain(contenu);
+    const [interne] = await listCommandesForPeriode(
+      periodeOf(new Date()),
+    );
+    expect(interne.briefNom).toBe("brief-juin.pdf");
+
+    // Lecture complète : contenu + clientId pour l'autorisation de la route.
+    const brief = await getBrief(commande.id);
+    expect(brief?.nom).toBe("brief-juin.pdf");
+    expect(brief?.contenu).toBe(contenu);
+    expect(brief?.clientId).toBe(client.id);
+    expect(await getBrief("6f9619ff-8b86-4d01-b42d-00cf4fc964ff")).toBeNull();
   });
 
   it("enregistre le tip (défaut 0,00)", async () => {

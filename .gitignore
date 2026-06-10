@@ -54,3 +54,6 @@ next-env.d.ts
 
 # e2e auth artifacts (cookie de session signé — jamais committé)
 /e2e/.auth/
+
+# briefs PDF uploadés en dev/e2e (fallback local de Vercel Blob)
+/.uploads/

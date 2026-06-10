@@ -60,6 +60,17 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
     pageA.getByText("Total TTC").locator(".."),
   ).toContainText("154,00 €");
 
+  // Fichiers : lien SwissTransfer + brief PDF.
+  await pageA
+    .getByLabel("Lien SwissTransfer")
+    .fill("https://www.swisstransfer.com/d/e2e-rushs");
+  await pageA.getByLabel("Brief PDF").setInputFiles({
+    name: "brief-e2e.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF"),
+  });
+  await expect(pageA.getByText("brief-e2e.pdf")).toBeVisible();
+
   // Tip de 6 € → total 160,00 €.
   await pageA.getByLabel(/tip/i).fill("6");
   await expect(
@@ -85,6 +96,17 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
   // 5. Owner : générer la facture du mois → 154,00 €.
   await page.goto("/facturation");
   await expect(page.getByText("Commande #1")).toBeVisible();
+
+  // Les fichiers du client sont là : lien rushs + brief téléchargeable.
+  await expect(
+    page.getByRole("link", { name: "Rushs (SwissTransfer)" }),
+  ).toHaveAttribute("href", "https://www.swisstransfer.com/d/e2e-rushs");
+  const briefLink = page.getByRole("link", { name: /Brief PDF/ });
+  const briefHref = await briefLink.getAttribute("href");
+  const briefResponse = await page.request.get(briefHref!);
+  expect(briefResponse.status()).toBe(200);
+  expect(briefResponse.headers()["content-type"]).toBe("application/pdf");
+  expect((await briefResponse.body()).toString()).toContain("%PDF-1.4");
   await page.getByRole("button", { name: "Générer la facture" }).click();
   await page.waitForURL("**/facturation/**");
   await expect(page.getByText(/FAC-\d{4}-\d{2}-001/)).toBeVisible();
@@ -104,6 +126,9 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
   await expect(pageB.getByText("Client B")).toBeVisible();
   await expect(pageB.getByText(/aucune commande/i)).toBeVisible();
   await expect(pageB.getByText("Commande #1")).toBeHidden();
+  // B ne peut pas télécharger le brief de A (404 indistinct).
+  const vol = await pageB.request.get(briefHref!);
+  expect(vol.status()).toBe(404);
 
   // 7. Un client connecté n'accède PAS à l'interne.
   await pageA.goto("/dashboard");
