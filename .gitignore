@@ -51,3 +51,6 @@ next-env.d.ts
 
 # artefacts MCP playwright (sessions agent)
 .playwright-mcp/
+
+# e2e auth artifacts (cookie de session signé — jamais committé)
+/e2e/.auth/
