@@ -15,3 +15,11 @@ export const TYPE_LABELS: Record<TypeProjet, string> = {
   montage_video: "Montage vidéo",
   site_web: "Site web",
 };
+
+export const STATUTS_COMMANDE = ["recue", "facturee"] as const;
+export type StatutCommande = (typeof STATUTS_COMMANDE)[number];
+
+export const STATUT_COMMANDE_LABELS: Record<StatutCommande, string> = {
+  recue: "Reçue",
+  facturee: "Facturée",
+};

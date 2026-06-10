@@ -23,9 +23,17 @@ describe("migrations Drizzle (PGlite)", () => {
     const first = await createPgliteDb(dataDir);
     const t1 = await first.pglite.query<{ table_name: string }>(TABLES_SQL);
     const names1 = t1.rows.map((r) => r.table_name);
-    expect(names1).toContain("clients");
-    expect(names1).toContain("projets");
-    expect(names1).toContain("missions");
+    for (const table of [
+      "clients",
+      "projets",
+      "missions",
+      "client_access",
+      "commandes",
+      "commande_lignes",
+      "factures",
+    ]) {
+      expect(names1, `table ${table}`).toContain(table);
+    }
     await first.pglite.query(`insert into clients (nom) values ('Persisté')`);
     await first.pglite.close();
 
