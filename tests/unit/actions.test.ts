@@ -3,7 +3,28 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // Obligatoire : revalidatePath crash hors contexte request Next.
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+const jar = new Map<string, string>();
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) =>
+      jar.has(name) ? { name, value: jar.get(name)! } : undefined,
+    set: (name: string, value: string) => {
+      jar.set(name, value);
+    },
+    delete: (name: string) => {
+      jar.delete(name);
+    },
+  }),
+  headers: async () => new Headers({ host: "localhost:3000" }),
+}));
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => {
+    throw new Error(`REDIRECT:${url}`);
+  },
+}));
+
 import { revalidatePath } from "next/cache";
+import { OWNER_COOKIE, signSession } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { clients, missions, projets } from "@/lib/db/schema";
 import { createClientAction } from "@/lib/actions/clients";
@@ -34,11 +55,33 @@ async function seedProjet() {
 }
 
 beforeEach(async () => {
+  vi.stubEnv("SESSION_SECRET", "secret-de-test-suffisamment-long!");
+  // Les actions internes exigent une session owner.
+  jar.clear();
+  jar.set(OWNER_COOKIE, signSession({ sub: "owner", role: "owner" }, 3600));
   const db = await getDb();
   await db.delete(missions);
   await db.delete(projets);
   await db.delete(clients);
   vi.mocked(revalidatePath).mockClear();
+});
+
+describe("guards des actions internes", () => {
+  it("toute action interne est refusée sans session owner", async () => {
+    jar.clear();
+    await expect(createClientAction({ nom: "X" })).rejects.toThrow(
+      "REDIRECT:/connexion",
+    );
+    await expect(
+      createMissionAction({ projetId: UUID, titre: "X" }),
+    ).rejects.toThrow("REDIRECT:/connexion");
+    await expect(deleteMissionAction({ id: UUID })).rejects.toThrow(
+      "REDIRECT:/connexion",
+    );
+    await expect(
+      updateMissionStatutAction({ id: UUID, statut: "termine" }),
+    ).rejects.toThrow("REDIRECT:/connexion");
+  });
 });
 
 describe("createClientAction", () => {
