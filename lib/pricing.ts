@@ -92,3 +92,10 @@ export function centsToNumeric(cents: number): string {
   const reste = Math.abs(cents % 100).toString().padStart(2, "0");
   return `${euros}.${reste}`;
 }
+
+/** « 84.00 » → 8400 (lecture des colonnes numeric). */
+export function numericToCents(value: string): number {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value);
+  if (!match) throw new Error(`Montant invalide : ${value}`);
+  return Number(match[1]) * 100 + Number((match[2] ?? "0").padEnd(2, "0"));
+}
