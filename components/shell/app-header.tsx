@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/shell/nav-link";
 import { useQuickAdd } from "@/components/missions/quick-add";
+import { logoutOwnerAction } from "@/lib/actions/auth";
 
 export function AppHeader() {
   const { openQuickAdd } = useQuickAdd();
   return (
-    <header className="border-b">
+    <header className="border-b print:hidden">
       <div className="mx-auto flex h-12 max-w-6xl items-center gap-6 px-4 md:px-8">
         <Link
           href="/"
@@ -21,6 +22,7 @@ export function AppHeader() {
           <NavLink href="/">Calendrier</NavLink>
           <NavLink href="/dashboard">Dashboard</NavLink>
           <NavLink href="/projets">Projets</NavLink>
+          <NavLink href="/facturation">Facturation</NavLink>
         </nav>
         <div className="ml-auto flex items-center gap-3">
           <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
@@ -33,6 +35,16 @@ export function AppHeader() {
             <Plus aria-hidden data-icon="inline-start" />
             <span className="hidden sm:inline">Nouvelle mission</span>
           </Button>
+          <form action={logoutOwnerAction}>
+            <Button
+              variant="ghost"
+              size="icon"
+              type="submit"
+              aria-label="Se déconnecter"
+            >
+              <LogOut aria-hidden className="size-4" />
+            </Button>
+          </form>
         </div>
       </div>
     </header>
