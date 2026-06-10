@@ -1,4 +1,4 @@
-# Organizr — Design system N&B (étape DS, fait foi pour P3–P5)
+# Organizr — Design system N&B (étape DS, fait foi pour P3–P5 et v2)
 
 Fixé AVANT toute UI (pass « impeccable », register product). Tokens dans
 `app/globals.css`. Toute déviation doit être justifiée ici.
@@ -104,3 +104,46 @@ Badge statut = `StatutDot` + label texte, **sans fond pill**.
 grep -nE "oklch\([0-9.]+ (0\.[0-9]+|[1-9])" app/globals.css
 grep -rnE "(text|bg|border|ring)-(red|blue|green|amber|yellow|orange|violet|purple|pink|rose|emerald|teal|cyan|sky|indigo|lime|fuchsia)-" app components
 ```
+
+---
+
+# Extension v2 — Portail client & facturation (DS-P)
+
+## 10. Registre portail (`/espace`)
+
+Même langue « encre sur papier », mais **le client est un invité, pas un
+opérateur** : densité aérée, une seule colonne `max-w-3xl`, AUCUN lien vers
+l'interne. En-tête : « ReNew Editing » (semibold) + « Espace client » (muted)
++ nom du client + déconnexion. Le wordmark « Organizr » n'apparaît PAS côté
+client (c'est l'outil interne, la marque visible est ReNew Editing).
+
+## 11. Formulaire de commande
+
+- Lignes = rangées réglées (`divide-y border-y`), comme un devis papier :
+  prestation (select natif), quantité (input number 1–50), brief (textarea
+  courte), prix unitaire et total de ligne en `tabular-nums` alignés à droite.
+- Le prix vit DANS la rangée, recalculé à la frappe (lib/pricing côté client,
+  affichage seulement — le serveur recalcule).
+- Récap = addition posée : filet fort au-dessus, « Total TTC » + montant
+  `text-base font-semibold tabular-nums` à droite.
+- Grille tarifaire visible au-dessus du formulaire (détails des prestations
+  + dégressivité résumée) — le client commande en connaissance.
+- Succès = « Commande #N reçue » + rappel qu'elle apparaît dans l'historique.
+
+## 12. Facture print-ready (`/facturation/[id]`)
+
+- Format pensé A4 : en-tête « ReNew Editing » + numéro `FAC-AAAA-MM-XXX` en
+  `tabular-nums`, période, client ; table réglée hairline (lignes : label,
+  commande #, quantité, PU, total) ; total TTC à droite sous filet fort.
+- `@page { margin: 15mm }` ; tout le chrome (nav, boutons) porte
+  `print:hidden` ; la facture elle-même est le seul contenu imprimé.
+- Mention « TTC » explicite ; révision affichée si > 1 (« révision 2 —
+  remplace FAC-… »).
+- Bouton « Imprimer » = `window.print()` (le PDF vient du navigateur).
+
+## 13. États vides portail
+
+- Aucune commande : « Aucune commande pour l'instant. Compose ta première
+  commande ci-dessus. »
+- Lien invalide/expiré : message simple + « demande un nouveau lien à
+  ReNew Editing » — jamais de détail technique.

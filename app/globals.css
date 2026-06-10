@@ -105,3 +105,8 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Impression (facture) : marges A4, le chrome porte print:hidden */
+@page {
+  margin: 15mm;
+}
