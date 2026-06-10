@@ -55,7 +55,8 @@ export async function createCommandeAction(
     const client = await getClientById(clientId);
     if (!client) return { ok: false, error: "Compte client introuvable." };
 
-    const commande = await createCommandeWithLignes(clientId, lignes);
+    const tipCents = Math.round((parsed.data.tipEuros ?? 0) * 100);
+    const commande = await createCommandeWithLignes(clientId, lignes, tipCents);
 
     const projet = await createProjet({
       clientId,

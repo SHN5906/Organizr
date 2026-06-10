@@ -6,10 +6,11 @@ import { CommandeForm } from "@/components/portail/commande-form";
 // RTL normalise le texte DOM (l'insécable de NBSP_EURO devient une espace
 // simple) mais PAS les matchers : on matche donc la forme normalisée.
 const EURO = (montant: string) => `${montant} €`;
+const SUBMIT = /ajouter à ce mois/i;
 
 describe("CommandeForm", () => {
   it("calcule le prix en direct : 3 reels simples + 1 longue = 154,00 €", async () => {
-    render(<CommandeForm onSubmit={vi.fn()} />);
+    render(<CommandeForm moisLabel="juin 2026" onSubmit={vi.fn()} />);
 
     const ligne1 = screen.getAllByRole("group")[0];
     await userEvent.selectOptions(
@@ -35,22 +36,43 @@ describe("CommandeForm", () => {
     );
   });
 
+  it("le tip entre dans le total live et dans le payload", async () => {
+    const onSubmit = vi
+      .fn()
+      .mockResolvedValue({ ok: true, data: { numero: 3 } });
+    render(<CommandeForm moisLabel="juin 2026" onSubmit={onSubmit} />);
+
+    const ligne = screen.getAllByRole("group")[0];
+    await userEvent.selectOptions(
+      within(ligne).getByLabelText(/prestation/i),
+      "video_longue",
+    );
+    await userEvent.type(screen.getByLabelText(/tip/i), "6");
+    expect(screen.getByText(/total ttc/i).parentElement).toHaveTextContent(
+      EURO("76,00"), // 70 + 6
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: SUBMIT }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ tipEuros: 6 });
+  });
+
   it("bloque une quantité hors bornes", async () => {
     const onSubmit = vi.fn();
-    render(<CommandeForm onSubmit={onSubmit} />);
+    render(<CommandeForm moisLabel="juin 2026" onSubmit={onSubmit} />);
     const qte = screen.getByLabelText(/quantité/i);
     await userEvent.clear(qte);
     await userEvent.type(qte, "0");
-    await userEvent.click(screen.getByRole("button", { name: /commander/i }));
+    await userEvent.click(screen.getByRole("button", { name: SUBMIT }));
     expect(await screen.findByText(/quantité minimale/i)).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("soumet les lignes SANS prix et affiche la confirmation", async () => {
+  it("soumet les lignes SANS prix et confirme l'ajout au mois", async () => {
     const onSubmit = vi
       .fn()
       .mockResolvedValue({ ok: true, data: { numero: 7 } });
-    render(<CommandeForm onSubmit={onSubmit} />);
+    render(<CommandeForm moisLabel="juin 2026" onSubmit={onSubmit} />);
 
     const ligne = screen.getAllByRole("group")[0];
     const qte = within(ligne).getByLabelText(/quantité/i);
@@ -60,7 +82,7 @@ describe("CommandeForm", () => {
       within(ligne).getByLabelText(/brief/i),
       "3 reels événement",
     );
-    await userEvent.click(screen.getByRole("button", { name: /commander/i }));
+    await userEvent.click(screen.getByRole("button", { name: SUBMIT }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     const payload = onSubmit.mock.calls[0][0] as {
@@ -72,7 +94,7 @@ describe("CommandeForm", () => {
     expect(JSON.stringify(payload)).not.toMatch(/prix|total/i);
 
     expect(
-      await screen.findByText(/commande #7 reçue/i),
+      await screen.findByText(/commande #7 ajoutée à juin 2026/i),
     ).toBeInTheDocument();
   });
 
@@ -80,8 +102,8 @@ describe("CommandeForm", () => {
     const onSubmit = vi
       .fn()
       .mockResolvedValue({ ok: false, error: "Une erreur est survenue." });
-    render(<CommandeForm onSubmit={onSubmit} />);
-    await userEvent.click(screen.getByRole("button", { name: /commander/i }));
+    render(<CommandeForm moisLabel="juin 2026" onSubmit={onSubmit} />);
+    await userEvent.click(screen.getByRole("button", { name: SUBMIT }));
     expect(
       await screen.findByText(/une erreur est survenue/i),
     ).toBeInTheDocument();

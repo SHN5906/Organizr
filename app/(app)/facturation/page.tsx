@@ -53,9 +53,13 @@ export default async function FacturationPage({
       ) : (
         <div className="flex flex-col gap-8">
           {[...parClient.entries()].map(([clientId, entry]) => {
-            const totalCents = entry.commandes
-              .flatMap((c) => c.lignes)
-              .reduce((sum, l) => sum + numericToCents(l.total), 0);
+            const totalCents = entry.commandes.reduce(
+              (sum, c) =>
+                sum +
+                c.lignes.reduce((s, l) => s + numericToCents(l.total), 0) +
+                numericToCents(c.tip),
+              0,
+            );
             const facturesClient = factures.filter(
               (f) => f.clientId === clientId,
             );
@@ -92,12 +96,15 @@ export default async function FacturationPage({
                           </span>
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {commande.lignes
-                            .map(
+                          {[
+                            ...commande.lignes.map(
                               (l) =>
                                 `${l.quantite} × ${PRESTATION_LABELS[l.type]}`,
-                            )
-                            .join(" · ")}
+                            ),
+                            ...(numericToCents(commande.tip) > 0
+                              ? ["tip"]
+                              : []),
+                          ].join(" · ")}
                         </p>
                       </div>
                       <span className="text-xs text-muted-foreground">
@@ -108,7 +115,7 @@ export default async function FacturationPage({
                           commande.lignes.reduce(
                             (s, l) => s + numericToCents(l.total),
                             0,
-                          ),
+                          ) + numericToCents(commande.tip),
                         )}
                       </span>
                     </li>

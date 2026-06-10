@@ -106,7 +106,7 @@ export const clientAccess = pgTable(
 /** Ligne snapshotée dans une facture — figée à la génération. */
 export type FactureLigneSnapshot = {
   commandeNumero: number;
-  type: TypePrestation;
+  type: TypePrestation | "tip";
   label: string;
   quantite: number;
   prixUnitaire: string; // "28.00"
@@ -144,6 +144,8 @@ export const commandes = pgTable(
       .notNull()
       .generatedAlwaysAsIdentity(),
     statut: statutCommandeEnum("statut").notNull().default("recue"),
+    // Tip volontaire du client, en euros TTC ("6.00") — défaut 0.
+    tip: numeric("tip", { precision: 10, scale: 2 }).notNull().default("0.00"),
     projetId: uuid("projet_id").references(() => projets.id, {
       onDelete: "set null",
     }),

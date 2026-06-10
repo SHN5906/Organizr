@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { CommandeForm } from "@/components/portail/commande-form";
+import { periodeLabel } from "@/components/facturation/periode-nav";
 import { createCommandeAction } from "@/lib/actions/commandes";
 import { requireClient } from "@/lib/auth/guards";
 import { listCommandesForClient } from "@/lib/data/portal/commandes";
-import { formatDayFr } from "@/lib/format";
+import { formatDayFr, periodeOf } from "@/lib/format";
 import {
   formatCents,
   numericToCents,
@@ -21,11 +22,17 @@ export const metadata: Metadata = { title: "Espace client" };
 export default async function EspacePage() {
   const clientId = await requireClient();
   const commandes = await listCommandesForClient(clientId);
+  const moisLabel = periodeLabel(periodeOf(new Date()));
 
   return (
     <div className="flex flex-col gap-10">
       <section className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Commander</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Ajouter à {moisLabel}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Tout ce que tu ajoutes ce mois-ci part sur la facture de {moisLabel}.
+        </p>
         <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
           {TYPES_PRESTATION.map((t) => (
             <li key={t}>
@@ -43,7 +50,7 @@ export default async function EspacePage() {
             </li>
           ))}
         </ul>
-        <CommandeForm onSubmit={createCommandeAction} />
+        <CommandeForm moisLabel={moisLabel} onSubmit={createCommandeAction} />
       </section>
 
       <section className="flex flex-col gap-3">
@@ -70,11 +77,12 @@ export default async function EspacePage() {
                     </span>
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {commande.lignes
-                      .map(
+                    {[
+                      ...commande.lignes.map(
                         (l) => `${l.quantite} × ${PRESTATION_LABELS[l.type]}`,
-                      )
-                      .join(" · ")}
+                      ),
+                      ...(numericToCents(commande.tip) > 0 ? ["tip"] : []),
+                    ].join(" · ")}
                   </p>
                 </div>
                 <span className="text-xs text-muted-foreground">
@@ -85,7 +93,7 @@ export default async function EspacePage() {
                     commande.lignes.reduce(
                       (sum, l) => sum + numericToCents(l.total),
                       0,
-                    ),
+                    ) + numericToCents(commande.tip),
                   )}
                 </span>
               </li>

@@ -60,8 +60,14 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
     pageA.getByText("Total TTC").locator(".."),
   ).toContainText("154,00 €");
 
-  await pageA.getByRole("button", { name: "Commander" }).click();
-  await expect(pageA.getByText(/commande #1 reçue/i)).toBeVisible();
+  // Tip de 6 € → total 160,00 €.
+  await pageA.getByLabel(/tip/i).fill("6");
+  await expect(
+    pageA.getByText("Total TTC").locator(".."),
+  ).toContainText("160,00 €");
+
+  await pageA.getByRole("button", { name: "Ajouter à ce mois" }).click();
+  await expect(pageA.getByText(/commande #1 ajoutée à/i)).toBeVisible();
   await expect(pageA.getByText(/3 × Reel — montage simple/)).toBeVisible();
 
   // 4. Owner : les 4 missions de la commande sont au dashboard.
@@ -85,8 +91,10 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
   await expect(
     page.getByRole("columnheader", { name: "Total TTC" }),
   ).toBeVisible();
+  // 154,00 € de prestations + 6,00 € de tip (ligne dédiée).
+  await expect(page.locator("article").getByText("Tip")).toBeVisible();
   await expect(
-    page.locator("article").getByText("154,00 €"),
+    page.locator("article").getByText("160,00 €"),
   ).toBeVisible();
 
   // 6. Isolation : Client B ne voit rien de Client A.

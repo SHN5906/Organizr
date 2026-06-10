@@ -22,6 +22,11 @@ export const commandeCreateSchema = z.object({
     .array(commandeLigneSchema)
     .min(1, "Ajoute au moins une ligne")
     .max(20, "20 lignes maximum par commande"),
+  tipEuros: z
+    .number("Tip invalide")
+    .min(0, "Le tip ne peut pas être négatif")
+    .max(1000, "Tip maximum : 1 000 €")
+    .optional(),
 });
 
 export type CommandeCreateInput = z.infer<typeof commandeCreateSchema>;
