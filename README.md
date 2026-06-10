@@ -14,11 +14,16 @@ Neon `neon-coffee-pocket`). Raccourci : `n` → nouvelle mission.
   Projets → « Inviter » (lien valable 14 j, session 90 j, révocable à effet
   immédiat). Aucun mot de passe client, aucun email automatique : tu copies
   le lien et l'envoies toi-même.
-- **Commandes** : le client choisit ses prestations (grille ReNew Editing TTC,
-  dégressive par ligne ; vidéo longue 70 €), la commande crée automatiquement
-  un projet + une mission par vidéo dans ton dashboard.
+- **Commandes** : le client choisit ses prestations — grille ReNew Editing TTC :
+  reels simples/complexes dégressifs **par ligne**, vidéo longue 70 €, vidéo
+  essentielle 15 € (tarif unique) — avec tip optionnel. Chaque commande crée
+  automatiquement un projet + une mission par vidéo dans ton dashboard.
+- **Fichiers de commande** : liens SwissTransfer multiples et titrés (10 max)
+  + un brief PDF (5 Mo max), visibles côté interne (`/projets`,
+  `/facturation`) et dans l'historique client, groupé par mois.
 - **Facturation** (`/facturation`) : par client × mois, facture print-ready
-  `FAC-AAAA-MM-XXX` (impression PDF par le navigateur), régénération = révision.
+  `FAC-AAAA-MM-XXX` (impression PDF par le navigateur), régénération =
+  révision, corbeille pour les révisions remplacées.
 
 Variables d'environnement supplémentaires : `OWNER_PASSWORD`, `SESSION_SECRET`
 (générées, posées sur Vercel — voir `.env.example`).

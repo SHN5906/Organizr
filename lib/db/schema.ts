@@ -146,7 +146,9 @@ export const commandes = pgTable(
     statut: statutCommandeEnum("statut").notNull().default("recue"),
     // Tip volontaire du client, en euros TTC ("6.00") — défaut 0.
     tip: numeric("tip", { precision: 10, scale: 2 }).notNull().default("0.00"),
-    // Lien vers les rushs (SwissTransfer ou équivalent), https obligatoire.
+    // DÉPRÉCIÉ (v2.4) : remplacé par la table commande_liens (titres +
+    // liens multiples), backfillée par la migration 0005. Colonne conservée
+    // pour l'historique des migrations — ne plus jamais écrire dedans.
     lienSwisstransfer: text("lien_swisstransfer"),
     projetId: uuid("projet_id").references(() => projets.id, {
       onDelete: "set null",
@@ -180,6 +182,26 @@ export const commandeLignes = pgTable(
   },
   (t) => [index("commande_lignes_commande_id_idx").on(t.commandeId)],
 );
+
+/** Liens de partage (SwissTransfer ou équivalent) joints à une commande. */
+export const commandeLiens = pgTable(
+  "commande_liens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    commandeId: uuid("commande_id")
+      .notNull()
+      .references(() => commandes.id, { onDelete: "cascade" }),
+    // Séquence globale : tri uniquement.
+    ordre: bigint("ordre", { mode: "number" })
+      .notNull()
+      .generatedAlwaysAsIdentity(),
+    titre: text("titre"),
+    url: text("url").notNull(),
+  },
+  (t) => [index("commande_liens_commande_id_idx").on(t.commandeId)],
+);
+
+export type LienPartage = typeof commandeLiens.$inferSelect;
 
 /**
  * Brief PDF déposé avec la commande. Table dédiée : le contenu (base64,

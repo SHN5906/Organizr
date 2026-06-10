@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FichiersCommande } from "@/components/commandes/fichiers-commande";
 import { DeleteFactureButton } from "@/components/facturation/delete-facture-button";
 import { GenerateFactureButton } from "@/components/facturation/generate-facture-button";
 import { PeriodeNav } from "@/components/facturation/periode-nav";
 import { requireOwner } from "@/lib/auth/guards";
 import { listCommandesForPeriode } from "@/lib/data/commandes";
 import { listFacturesForPeriode } from "@/lib/data/factures";
-import { formatDayFr, parsePeriodeParam, todayInAppZone } from "@/lib/format";
+import {
+  formatInstantDayFr,
+  parsePeriodeParam,
+  todayInAppZone,
+} from "@/lib/format";
 import { formatCents, numericToCents, PRESTATION_LABELS } from "@/lib/pricing";
 import type { SearchParams } from "@/lib/search-params";
 import { STATUT_COMMANDE_LABELS } from "@/lib/validation/labels";
@@ -91,9 +96,7 @@ export default async function FacturationPage({
                         <p className="text-sm font-medium tabular-nums">
                           Commande #{commande.numero}
                           <span className="ml-2 text-xs font-normal text-muted-foreground">
-                            {formatDayFr(
-                              commande.createdAt.toISOString().slice(0, 10),
-                            )}
+                            {formatInstantDayFr(commande.createdAt)}
                           </span>
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
@@ -107,30 +110,11 @@ export default async function FacturationPage({
                               : []),
                           ].join(" · ")}
                         </p>
-                        {(commande.lienSwisstransfer || commande.briefNom) && (
-                          <p className="flex flex-wrap gap-x-3 text-xs">
-                            {commande.lienSwisstransfer && (
-                              <a
-                                href={commande.lienSwisstransfer}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="underline underline-offset-4 hover:text-foreground"
-                              >
-                                Rushs (SwissTransfer)
-                              </a>
-                            )}
-                            {commande.briefNom && (
-                              <a
-                                href={`/api/briefs/${commande.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="underline underline-offset-4 hover:text-foreground"
-                              >
-                                Brief PDF — {commande.briefNom}
-                              </a>
-                            )}
-                          </p>
-                        )}
+                        <FichiersCommande
+                          liens={commande.liens}
+                          briefNom={commande.briefNom}
+                          commandeId={commande.id}
+                        />
                       </div>
                       <span className="text-xs text-muted-foreground">
                         {STATUT_COMMANDE_LABELS[commande.statut]}

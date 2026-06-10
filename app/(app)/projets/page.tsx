@@ -8,7 +8,9 @@ import {
 import { ProjetFormDialog } from "@/components/projets/projet-form-dialog";
 import { StatutBadge } from "@/components/missions/statut-badge";
 import { Button } from "@/components/ui/button";
+import { FichiersCommande } from "@/components/commandes/fichiers-commande";
 import { listInvitations } from "@/lib/data/client-access";
+import { listCommandesForProjets } from "@/lib/data/commandes";
 import { listClients } from "@/lib/data/clients";
 import { listProjets } from "@/lib/data/projets";
 import { formatDayFr } from "@/lib/format";
@@ -22,6 +24,15 @@ export default async function ProjetsPage() {
   await requireOwner();
   const [clients, projets] = await Promise.all([listClients(), listProjets()]);
   const clientOptions = clients.map((c) => ({ id: c.id, nom: c.nom }));
+  const fichiersCommandes = await listCommandesForProjets(
+    projets.map((p) => p.id),
+  );
+  const fichiersParProjet = new Map<string, typeof fichiersCommandes>();
+  for (const f of fichiersCommandes) {
+    const list = fichiersParProjet.get(f.projetId) ?? [];
+    list.push(f);
+    fichiersParProjet.set(f.projetId, list);
+  }
   const invitationsParClient = new Map<string, InvitationRow[]>(
     await Promise.all(
       clients.map(async (c) => {
@@ -96,6 +107,14 @@ export default async function ProjetsPage() {
                             {TYPE_LABELS[p.type]}
                             {p.description ? ` · ${p.description}` : ""}
                           </p>
+                          {(fichiersParProjet.get(p.id) ?? []).map((f) => (
+                            <FichiersCommande
+                              key={f.commandeId}
+                              liens={f.liens}
+                              briefNom={f.briefNom}
+                              commandeId={f.commandeId}
+                            />
+                          ))}
                         </div>
                         <div className="text-xs text-muted-foreground tabular-nums">
                           {p.deadline ? (

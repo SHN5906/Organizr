@@ -138,14 +138,17 @@ describe("createCommandeAction", () => {
     expect(negatif.ok).toBe(false);
   });
 
-  it("FormData : enregistre lien SwissTransfer + brief PDF (signature vérifiée)", async () => {
+  it("FormData : enregistre plusieurs liens titrés + brief PDF (signature vérifiée)", async () => {
     const client = await seedClientWithSession();
     const fd = new FormData();
     fd.set(
       "payload",
       JSON.stringify({
-        lignes: [{ type: "video_longue", quantite: 1 }],
-        lienSwisstransfer: "https://www.swisstransfer.com/d/abc123",
+        lignes: [{ type: "video_essentiel", quantite: 2 }],
+        liens: [
+          { titre: "Rushs jour 1", url: "https://www.swisstransfer.com/d/abc" },
+          { titre: "", url: "https://www.swisstransfer.com/d/def" },
+        ],
       }),
     );
     fd.set(
@@ -158,9 +161,12 @@ describe("createCommandeAction", () => {
     expect(result.ok).toBe(true);
 
     const [commande] = await listCommandesForClient(client.id);
-    expect(commande.lienSwisstransfer).toBe(
-      "https://www.swisstransfer.com/d/abc123",
-    );
+    // video_essentiel : 15 €/u recalculé serveur.
+    expect(commande.lignes[0].total).toBe("30.00");
+    expect(commande.liens.map((l) => [l.titre, l.url])).toEqual([
+      ["Rushs jour 1", "https://www.swisstransfer.com/d/abc"],
+      [null, "https://www.swisstransfer.com/d/def"],
+    ]);
     expect(commande.briefNom).toBe("brief juin.pdf");
     const brief = await getBrief(commande.id);
     expect(Buffer.from(brief!.contenu, "base64").toString()).toContain(
@@ -187,7 +193,7 @@ describe("createCommandeAction", () => {
 
     const lienHttp = await createCommandeAction({
       lignes: [{ type: "video_longue", quantite: 1 }],
-      lienSwisstransfer: "http://pas-https.com/x",
+      liens: [{ titre: "", url: "http://pas-https.com/x" }],
     });
     expect(lienHttp.ok).toBe(false);
 

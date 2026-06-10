@@ -113,7 +113,7 @@ export async function createCommandeAction(
       clientId,
       lignes,
       tipCents,
-      parsed.data.lienSwisstransfer ?? null,
+      parsed.data.liens ?? [],
     );
 
     if (brief?.ok) {

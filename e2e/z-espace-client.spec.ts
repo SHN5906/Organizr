@@ -1,5 +1,9 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+const moisCourantLabel = format(new Date(), "LLLL yyyy", { locale: fr });
 
 // Nommé z-* : tourne APRÈS les specs v1 qui supposent une base vierge
 // (ordre alphabétique, workers: 1). Le contexte par défaut est OWNER
@@ -60,9 +64,21 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
     pageA.getByText("Total TTC").locator(".."),
   ).toContainText("154,00 €");
 
-  // Fichiers : lien SwissTransfer + brief PDF.
-  await pageA
-    .getByLabel("Lien SwissTransfer")
+  // Catalogue : la vidéo essentiel (15 €, tarif unique) est proposée,
+  // dans la grille ET dans le select de prestation.
+  await expect(pageA.getByText("15,00 € / vidéo.")).toBeVisible();
+  await expect(
+    ligne2.getByLabel("Prestation").locator("option", {
+      hasText: "Vidéo essentiel",
+    }),
+  ).toHaveCount(1);
+
+  // Fichiers : liens SwissTransfer titrés + brief PDF.
+  await pageA.getByRole("button", { name: "Ajouter un lien" }).click();
+  const lienGroupe = pageA.getByRole("group", { name: "Lien 1" });
+  await lienGroupe.getByLabel("Titre du lien").fill("Rushs jour 1");
+  await lienGroupe
+    .getByLabel("URL")
     .fill("https://www.swisstransfer.com/d/e2e-rushs");
   await pageA.getByLabel("Brief PDF").setInputFiles({
     name: "brief-e2e.pdf",
@@ -80,6 +96,14 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
   await pageA.getByRole("button", { name: "Ajouter à ce mois" }).click();
   await expect(pageA.getByText(/commande #1 ajoutée à/i)).toBeVisible();
   await expect(pageA.getByText(/3 × Reel — montage simple/)).toBeVisible();
+  // Historique groupé par mois, avec sous-total et lien titré.
+  await expect(
+    pageA.getByRole("heading", { name: moisCourantLabel, exact: true }),
+  ).toBeVisible();
+  await expect(pageA.getByText("1 commande · 160,00 €")).toBeVisible();
+  await expect(
+    pageA.getByRole("link", { name: "Rushs jour 1" }),
+  ).toBeVisible();
 
   // 4. Owner : les 4 missions de la commande sont au dashboard.
   // (la base n'est pas vierge ici : les specs v1 ont déjà créé des données)
@@ -93,13 +117,20 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
     await expect(page.getByText(titre)).toBeVisible();
   }
 
+  // 4b. Les fichiers sont visibles côté Projets (commande → projet).
+  await page.goto("/projets");
+  await expect(
+    page.getByRole("link", { name: "Rushs jour 1" }),
+  ).toHaveAttribute("href", "https://www.swisstransfer.com/d/e2e-rushs");
+  await expect(page.getByRole("link", { name: /Brief PDF/ })).toBeVisible();
+
   // 5. Owner : générer la facture du mois → 154,00 €.
   await page.goto("/facturation");
   await expect(page.getByText("Commande #1")).toBeVisible();
 
-  // Les fichiers du client sont là : lien rushs + brief téléchargeable.
+  // Les fichiers du client sont là : lien rushs titré + brief téléchargeable.
   await expect(
-    page.getByRole("link", { name: "Rushs (SwissTransfer)" }),
+    page.getByRole("link", { name: "Rushs jour 1" }),
   ).toHaveAttribute("href", "https://www.swisstransfer.com/d/e2e-rushs");
   const briefLink = page.getByRole("link", { name: /Brief PDF/ });
   const briefHref = await briefLink.getAttribute("href");

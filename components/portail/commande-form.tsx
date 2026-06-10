@@ -18,11 +18,14 @@ import {
   PRESTATION_LABELS,
   QUANTITE_MAX,
   TYPES_PRESTATION,
+  TYPES_PRESTATION_AFFICHAGE,
   unitPriceCents,
 } from "@/lib/pricing";
 
 // Schéma du FORMULAIRE (affichage) : AUCUN champ prix — le serveur recalcule
 // tout via lib/validation/commandes + lib/pricing.
+const LIENS_MAX = 10;
+
 const ligneFormSchema = z.object({
   type: z.enum(TYPES_PRESTATION),
   quantite: z
@@ -30,7 +33,7 @@ const ligneFormSchema = z.object({
     .int("Quantité entière requise")
     .min(1, "Quantité minimale : 1")
     .max(QUANTITE_MAX, `Quantité maximale : ${QUANTITE_MAX}`),
-  brief: z.string(),
+  brief: z.string().max(2000, "Brief trop long (2 000 caractères max)"),
 });
 
 const commandeFormSchema = z.object({
@@ -40,13 +43,21 @@ const commandeFormSchema = z.object({
     .min(0, "Le tip ne peut pas être négatif")
     .max(1000, "Tip maximum : 1 000 €")
     .optional(),
-  lienSwisstransfer: z
-    .string()
-    .max(500, "Lien trop long")
-    .refine(
-      (v) => v === "" || v.startsWith("https://"),
-      "Le lien doit commencer par https://",
-    ),
+  liens: z
+    .array(
+      z.object({
+        titre: z.string().max(100, "Titre trop long (100 caractères max)"),
+        url: z
+          .string()
+          .min(1, "URL requise")
+          .max(500, "Lien trop long")
+          .refine(
+            (v) => v.startsWith("https://"),
+            "Le lien doit commencer par https://",
+          ),
+      }),
+    )
+    .max(LIENS_MAX, `${LIENS_MAX} liens maximum`),
 });
 
 const BRIEF_MAX_OCTETS = 5 * 1024 * 1024;
@@ -88,13 +99,14 @@ export function CommandeForm({
     defaultValues: {
       lignes: [{ type: "reel_simple", quantite: 1, brief: "" }],
       tipEuros: undefined,
-      lienSwisstransfer: "",
+      liens: [],
     },
   });
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "lignes",
   });
+  const liensArray = useFieldArray({ control: form.control, name: "liens" });
   const lignes = useWatch({ control: form.control, name: "lignes" });
   const tipEuros = useWatch({ control: form.control, name: "tipEuros" });
   const { errors, isSubmitting } = form.formState;
@@ -147,9 +159,7 @@ export function CommandeForm({
         ...(values.tipEuros !== undefined && values.tipEuros > 0
           ? { tipEuros: values.tipEuros }
           : {}),
-        ...(values.lienSwisstransfer
-          ? { lienSwisstransfer: values.lienSwisstransfer }
-          : {}),
+        ...(values.liens.length > 0 ? { liens: values.liens } : {}),
       }),
     );
     if (briefFile) fd.set("brief", briefFile);
@@ -189,7 +199,7 @@ export function CommandeForm({
                     id={`${uid}-type-${index}`}
                     {...form.register(`lignes.${index}.type`)}
                   >
-                    {TYPES_PRESTATION.map((t) => (
+                    {TYPES_PRESTATION_AFFICHAGE.map((t) => (
                       <option key={t} value={t}>
                         {PRESTATION_LABELS[t]}
                       </option>
@@ -237,8 +247,19 @@ export function CommandeForm({
                   <Textarea
                     id={`${uid}-brief-${index}`}
                     rows={2}
+                    maxLength={2000}
                     placeholder="Liens rushs, ambiance, références…"
+                    aria-invalid={!!ligneErrors?.brief}
+                    aria-describedby={
+                      ligneErrors?.brief
+                        ? `${uid}-brief-${index}-error`
+                        : undefined
+                    }
                     {...form.register(`lignes.${index}.brief`)}
+                  />
+                  <FieldError
+                    id={`${uid}-brief-${index}-error`}
+                    message={ligneErrors?.brief?.message}
                   />
                 </div>
                 {fields.length > 1 && (
@@ -266,26 +287,105 @@ export function CommandeForm({
           <span className="font-normal text-muted-foreground">(optionnel)</span>
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${uid}-lien`}>Lien SwissTransfer</Label>
-            <Input
-              id={`${uid}-lien`}
-              type="url"
-              inputMode="url"
-              placeholder="https://www.swisstransfer.com/d/…"
-              autoComplete="off"
-              aria-invalid={!!errors.lienSwisstransfer}
-              aria-describedby={
-                errors.lienSwisstransfer ? `${uid}-lien-error` : undefined
-              }
-              {...form.register("lienSwisstransfer")}
-            />
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">Liens SwissTransfer</p>
+            {liensArray.fields.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {liensArray.fields.map((field, index) => {
+                  const lienErrors = errors.liens?.[index];
+                  return (
+                    <li
+                      key={field.id}
+                      role="group"
+                      aria-label={`Lien ${index + 1}`}
+                      className="flex flex-col gap-1.5"
+                    >
+                      <div className="flex items-start gap-1.5">
+                        <div className="flex w-2/5 flex-col gap-1">
+                          <Label
+                            htmlFor={`${uid}-lien-titre-${index}`}
+                            className="text-xs text-muted-foreground"
+                          >
+                            Titre du lien
+                          </Label>
+                          <Input
+                            id={`${uid}-lien-titre-${index}`}
+                            placeholder="Rushs jour 1…"
+                            autoComplete="off"
+                            maxLength={100}
+                            aria-invalid={!!lienErrors?.titre}
+                            aria-describedby={
+                              lienErrors?.titre
+                                ? `${uid}-lien-titre-${index}-error`
+                                : undefined
+                            }
+                            {...form.register(`liens.${index}.titre`)}
+                          />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-1">
+                          <Label
+                            htmlFor={`${uid}-lien-url-${index}`}
+                            className="text-xs text-muted-foreground"
+                          >
+                            URL
+                          </Label>
+                          <Input
+                            id={`${uid}-lien-url-${index}`}
+                            type="url"
+                            inputMode="url"
+                            placeholder="https://www.swisstransfer.com/d/…"
+                            autoComplete="off"
+                            aria-invalid={!!lienErrors?.url}
+                            aria-describedby={
+                              lienErrors?.url
+                                ? `${uid}-lien-url-${index}-error`
+                                : undefined
+                            }
+                            {...form.register(`liens.${index}.url`)}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="mt-5"
+                          aria-label={`Retirer le lien ${index + 1}`}
+                          onClick={() => liensArray.remove(index)}
+                        >
+                          <X aria-hidden className="size-4" />
+                        </Button>
+                      </div>
+                      <FieldError
+                        id={`${uid}-lien-titre-${index}-error`}
+                        message={lienErrors?.titre?.message}
+                      />
+                      <FieldError
+                        id={`${uid}-lien-url-${index}-error`}
+                        message={lienErrors?.url?.message}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={liensArray.fields.length >= LIENS_MAX}
+                onClick={() => liensArray.append({ titre: "", url: "" })}
+              >
+                <Plus aria-hidden data-icon="inline-start" />
+                Ajouter un lien
+              </Button>
+            </div>
             <FieldError
-              id={`${uid}-lien-error`}
-              message={errors.lienSwisstransfer?.message}
+              message={errors.liens?.root?.message ?? errors.liens?.message}
             />
             <p className="text-xs text-muted-foreground">
-              Tes rushs, exports ou maquettes — colle le lien de partage.
+              Tes rushs, exports ou maquettes — un lien par transfert, avec un
+              titre pour t&apos;y retrouver ({LIENS_MAX} max).
             </p>
           </div>
           <div className="flex flex-col gap-1.5">

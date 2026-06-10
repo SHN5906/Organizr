@@ -8,6 +8,13 @@ export const optionalText = z.preprocess(
   z.string().trim().min(1).nullable(),
 );
 
+/** Variante bornée d'optionalText — pour les champs libres exposés au client. */
+export const optionalTextMax = (max: number, message: string) =>
+  z.preprocess(
+    (v) => (v == null || (typeof v === "string" && v.trim() === "") ? null : v),
+    z.string().trim().min(1).max(max, message).nullable(),
+  );
+
 /** Date optionnelle au format YYYY-MM-DD : absent / vide → null. */
 export const optionalDate = z.preprocess(
   (v) => (v == null || v === "" ? null : v),
