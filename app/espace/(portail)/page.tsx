@@ -84,6 +84,30 @@ export default async function EspacePage() {
                       ...(numericToCents(commande.tip) > 0 ? ["tip"] : []),
                     ].join(" · ")}
                   </p>
+                  {(commande.lienSwisstransfer || commande.briefNom) && (
+                    <p className="flex flex-wrap gap-x-3 text-xs">
+                      {commande.lienSwisstransfer && (
+                        <a
+                          href={commande.lienSwisstransfer}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-4 hover:text-foreground"
+                        >
+                          Rushs (SwissTransfer)
+                        </a>
+                      )}
+                      {commande.briefNom && (
+                        <a
+                          href={`/api/briefs/${commande.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-4 hover:text-foreground"
+                        >
+                          Brief PDF
+                        </a>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">
                   {STATUT_COMMANDE_LABELS[commande.statut]}

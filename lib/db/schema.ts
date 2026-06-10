@@ -146,6 +146,8 @@ export const commandes = pgTable(
     statut: statutCommandeEnum("statut").notNull().default("recue"),
     // Tip volontaire du client, en euros TTC ("6.00") — défaut 0.
     tip: numeric("tip", { precision: 10, scale: 2 }).notNull().default("0.00"),
+    // Lien vers les rushs (SwissTransfer ou équivalent), https obligatoire.
+    lienSwisstransfer: text("lien_swisstransfer"),
     projetId: uuid("projet_id").references(() => projets.id, {
       onDelete: "set null",
     }),
@@ -177,6 +179,29 @@ export const commandeLignes = pgTable(
     brief: text("brief"),
   },
   (t) => [index("commande_lignes_commande_id_idx").on(t.commandeId)],
+);
+
+/**
+ * Brief PDF déposé avec la commande. Table dédiée : le contenu (base64,
+ * ≤ 5 Mo) ne doit JAMAIS traverser les requêtes de liste — seules les
+ * métadonnées (nom) y sont jointes. Base64 texte plutôt que bytea : même
+ * comportement garanti sur neon-http et PGlite.
+ */
+export const commandeBriefs = pgTable(
+  "commande_briefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    commandeId: uuid("commande_id")
+      .notNull()
+      .unique()
+      .references(() => commandes.id, { onDelete: "cascade" }),
+    nom: text("nom").notNull(),
+    taille: integer("taille").notNull(), // octets réels du PDF
+    contenu: text("contenu").notNull(), // base64
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
 );
 
 export type Client = typeof clients.$inferSelect;

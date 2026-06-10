@@ -40,7 +40,16 @@ const commandeFormSchema = z.object({
     .min(0, "Le tip ne peut pas être négatif")
     .max(1000, "Tip maximum : 1 000 €")
     .optional(),
+  lienSwisstransfer: z
+    .string()
+    .max(500, "Lien trop long")
+    .refine(
+      (v) => v === "" || v.startsWith("https://"),
+      "Le lien doit commencer par https://",
+    ),
 });
+
+const BRIEF_MAX_OCTETS = 5 * 1024 * 1024;
 
 type CommandeFormValues = z.infer<typeof commandeFormSchema>;
 
@@ -71,11 +80,15 @@ export function CommandeForm({
 }) {
   const uid = React.useId();
   const [confirme, setConfirme] = React.useState<number | null>(null);
+  const [briefFile, setBriefFile] = React.useState<File | null>(null);
+  const [briefError, setBriefError] = React.useState<string | null>(null);
+  const briefInputRef = React.useRef<HTMLInputElement>(null);
   const form = useForm<CommandeFormValues>({
     resolver: zodResolver(commandeFormSchema),
     defaultValues: {
       lignes: [{ type: "reel_simple", quantite: 1, brief: "" }],
       tipEuros: undefined,
+      lienSwisstransfer: "",
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -120,20 +133,37 @@ export function CommandeForm({
   }
 
   const submit = form.handleSubmit(async (values) => {
-    const result = await onSubmit({
-      lignes: values.lignes.map((l) => ({
-        type: l.type,
-        quantite: l.quantite,
-        brief: l.brief,
-      })),
-      ...(values.tipEuros !== undefined && values.tipEuros > 0
-        ? { tipEuros: values.tipEuros }
-        : {}),
-    });
+    if (briefError) return;
+    // FormData : payload JSON + brief PDF — le serveur re-valide tout.
+    const fd = new FormData();
+    fd.set(
+      "payload",
+      JSON.stringify({
+        lignes: values.lignes.map((l) => ({
+          type: l.type,
+          quantite: l.quantite,
+          brief: l.brief,
+        })),
+        ...(values.tipEuros !== undefined && values.tipEuros > 0
+          ? { tipEuros: values.tipEuros }
+          : {}),
+        ...(values.lienSwisstransfer
+          ? { lienSwisstransfer: values.lienSwisstransfer }
+          : {}),
+      }),
+    );
+    if (briefFile) fd.set("brief", briefFile);
+
+    const result = await onSubmit(fd);
     if (!result.ok) {
-      form.setError("root", { message: result.error });
+      if (result.fieldErrors?.brief) {
+        setBriefError(result.fieldErrors.brief[0]);
+      } else {
+        form.setError("root", { message: result.error });
+      }
       return;
     }
+    setBriefFile(null);
     setConfirme(result.data.numero);
     onSuccess?.();
   });
@@ -228,6 +258,79 @@ export function CommandeForm({
           );
         })}
       </ul>
+
+      <fieldset className="flex flex-col gap-3 border-y py-4">
+        <legend className="sr-only">Tes fichiers</legend>
+        <p className="text-sm font-medium">
+          Tes fichiers{" "}
+          <span className="font-normal text-muted-foreground">(optionnel)</span>
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`${uid}-lien`}>Lien SwissTransfer</Label>
+            <Input
+              id={`${uid}-lien`}
+              type="url"
+              inputMode="url"
+              placeholder="https://www.swisstransfer.com/d/…"
+              autoComplete="off"
+              aria-invalid={!!errors.lienSwisstransfer}
+              aria-describedby={
+                errors.lienSwisstransfer ? `${uid}-lien-error` : undefined
+              }
+              {...form.register("lienSwisstransfer")}
+            />
+            <FieldError
+              id={`${uid}-lien-error`}
+              message={errors.lienSwisstransfer?.message}
+            />
+            <p className="text-xs text-muted-foreground">
+              Tes rushs, exports ou maquettes — colle le lien de partage.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`${uid}-brief-pdf`}>Brief PDF</Label>
+            <Input
+              id={`${uid}-brief-pdf`}
+              ref={briefInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              aria-invalid={!!briefError}
+              aria-describedby={briefError ? `${uid}-brief-pdf-error` : undefined}
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                setBriefError(null);
+                if (file && file.size > BRIEF_MAX_OCTETS) {
+                  setBriefError("Le brief PDF dépasse 5 Mo.");
+                  setBriefFile(null);
+                  return;
+                }
+                setBriefFile(file);
+              }}
+            />
+            <FieldError id={`${uid}-brief-pdf-error`} message={briefError ?? undefined} />
+            {briefFile && !briefError && (
+              <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span className="truncate">{briefFile.name}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => {
+                    setBriefFile(null);
+                    if (briefInputRef.current) briefInputRef.current.value = "";
+                  }}
+                >
+                  Retirer
+                </Button>
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Un seul PDF, 5 Mo max — cadrages, exemples, consignes.
+            </p>
+          </div>
+        </div>
+      </fieldset>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <Button

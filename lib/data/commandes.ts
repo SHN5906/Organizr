@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   clients,
+  commandeBriefs,
   commandeLignes,
   commandes,
   type Client,
@@ -21,18 +22,22 @@ export type CommandeLigneInput = {
 };
 
 export type CommandeWithLignes = Commande & { lignes: CommandeLigne[] };
-export type CommandeComplete = CommandeWithLignes & { client: Client };
+export type CommandeComplete = CommandeWithLignes & {
+  client: Client;
+  briefNom: string | null;
+};
 
 /** Crée la commande puis ses lignes (pas de transaction neon-http : ordre sûr). */
 export async function createCommandeWithLignes(
   clientId: string,
   lignes: CommandeLigneInput[],
   tipCents = 0,
+  lienSwisstransfer: string | null = null,
 ): Promise<CommandeWithLignes> {
   const db = await getDb();
   const [commande] = await db
     .insert(commandes)
-    .values({ clientId, tip: centsToNumeric(tipCents) })
+    .values({ clientId, tip: centsToNumeric(tipCents), lienSwisstransfer })
     .returning();
 
   const insertedLignes = await db
@@ -97,17 +102,24 @@ export async function listCommandesForPeriode(
   if (clientId) conditions.push(eq(commandes.clientId, clientId));
 
   const rows = await db
-    .select()
+    .select({
+      commande: commandes,
+      client: clients,
+      // Métadonnées du brief uniquement — jamais le contenu en liste.
+      briefNom: commandeBriefs.nom,
+    })
     .from(commandes)
     .innerJoin(clients, eq(commandes.clientId, clients.id))
+    .leftJoin(commandeBriefs, eq(commandeBriefs.commandeId, commandes.id))
     .where(and(...conditions))
     .orderBy(desc(commandes.numero));
 
-  const lignes = await lignesByCommande(rows.map((r) => r.commandes.id));
+  const lignes = await lignesByCommande(rows.map((r) => r.commande.id));
   return rows.map((r) => ({
-    ...r.commandes,
-    client: r.clients,
-    lignes: lignes.get(r.commandes.id) ?? [],
+    ...r.commande,
+    client: r.client,
+    briefNom: r.briefNom,
+    lignes: lignes.get(r.commande.id) ?? [],
   }));
 }
 

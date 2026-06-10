@@ -27,6 +27,14 @@ export const commandeCreateSchema = z.object({
     .min(0, "Le tip ne peut pas être négatif")
     .max(1000, "Tip maximum : 1 000 €")
     .optional(),
+  lienSwisstransfer: z.preprocess(
+    (v) => (v == null || v === "" ? undefined : v),
+    z
+      .url("Lien invalide")
+      .startsWith("https://", "Le lien doit commencer par https://")
+      .max(500, "Lien trop long")
+      .optional(),
+  ),
 });
 
 export type CommandeCreateInput = z.infer<typeof commandeCreateSchema>;
