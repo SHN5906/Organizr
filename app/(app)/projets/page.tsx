@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import { requireOwner } from "@/lib/auth/guards";
 import { ClientFormDialog } from "@/components/projets/client-form-dialog";
+import {
+  InviteClientDialog,
+  type InvitationRow,
+} from "@/components/projets/invite-client-dialog";
 import { ProjetFormDialog } from "@/components/projets/projet-form-dialog";
 import { StatutBadge } from "@/components/missions/statut-badge";
 import { Button } from "@/components/ui/button";
+import { listInvitations } from "@/lib/data/client-access";
 import { listClients } from "@/lib/data/clients";
 import { listProjets } from "@/lib/data/projets";
 import { formatDayFr } from "@/lib/format";
@@ -17,6 +22,23 @@ export default async function ProjetsPage() {
   await requireOwner();
   const [clients, projets] = await Promise.all([listClients(), listProjets()]);
   const clientOptions = clients.map((c) => ({ id: c.id, nom: c.nom }));
+  const invitationsParClient = new Map<string, InvitationRow[]>(
+    await Promise.all(
+      clients.map(async (c) => {
+        const rows = await listInvitations(c.id);
+        return [
+          c.id,
+          rows.map((r) => ({
+            id: r.id,
+            createdAt: r.createdAt.toISOString(),
+            expiresAt: r.expiresAt.toISOString(),
+            lastUsedAt: r.lastUsedAt?.toISOString() ?? null,
+            revokedAt: r.revokedAt?.toISOString() ?? null,
+          })),
+        ] as const;
+      }),
+    ),
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,13 +68,18 @@ export default async function ProjetsPage() {
             );
             return (
               <section key={client.id} className="flex flex-col gap-2">
-                <div className="flex items-baseline gap-3">
+                <div className="flex items-center gap-3">
                   <h2 className="text-base font-medium">{client.nom}</h2>
                   {client.contact && (
                     <span className="text-xs text-muted-foreground">
                       {client.contact}
                     </span>
                   )}
+                  <InviteClientDialog
+                    clientId={client.id}
+                    clientNom={client.nom}
+                    invitations={invitationsParClient.get(client.id) ?? []}
+                  />
                 </div>
                 {projetsClient.length > 0 ? (
                   <ul className="divide-y border-y">

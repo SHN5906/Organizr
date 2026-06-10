@@ -77,6 +77,27 @@ export function periodeBounds(
   };
 }
 
+const PERIODE_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** Param `?mois=` → 'YYYY-MM' valide, sinon période du jour. */
+export function parsePeriodeParam(
+  value: string | string[] | undefined,
+  today: Date,
+): string {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw && PERIODE_RE.test(raw)) return raw;
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Navigation de période : 'YYYY-MM' ± n mois. */
+export function addPeriode(periode: string, delta: number): string {
+  const [y, m] = periode.split("-").map(Number);
+  const total = y * 12 + (m - 1) + delta;
+  const year = Math.floor(total / 12);
+  const month = (total % 12) + 1;
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
 /** Instant → période 'YYYY-MM' dans le fuseau applicatif. */
 export function periodeOf(
   instant: Date,
