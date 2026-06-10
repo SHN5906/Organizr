@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requireOwner } from "@/lib/auth/guards";
 import { MissionFilters } from "@/components/missions/mission-filters";
 import { MissionRow } from "@/components/missions/mission-row";
 import type { ProjetOption } from "@/components/missions/mission-form";
@@ -16,6 +17,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await requireOwner();
   const params = parseDashboardParams(await searchParams);
   const [missions, clients, projets] = await Promise.all([
     listMissions(params),

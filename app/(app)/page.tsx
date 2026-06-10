@@ -1,3 +1,4 @@
+import { requireOwner } from "@/lib/auth/guards";
 import {
   CalendarMarker,
   KIND_LABELS,
@@ -21,6 +22,7 @@ export default async function HomePage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await requireOwner();
   const sp = await searchParams;
   const monthParam = Array.isArray(sp.month) ? sp.month[0] : sp.month;
   const today = todayInAppZone();

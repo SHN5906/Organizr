@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { commandes, factures } from "@/lib/db/schema";
+
 import { createClient } from "@/lib/data/clients";
 import {
   createInvitation,
