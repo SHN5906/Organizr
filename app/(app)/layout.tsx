@@ -1,6 +1,7 @@
 import { AppHeader } from "@/components/shell/app-header";
 import { QuickAddProvider } from "@/components/missions/quick-add";
 import type { ProjetOption } from "@/components/missions/mission-form";
+import { requireOwner } from "@/lib/auth/guards";
 import { listProjets } from "@/lib/data/projets";
 
 // Ce layout (et pas le layout racine) touche la DB : le groupe (app) ne
@@ -10,6 +11,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await requireOwner();
   const projets = await listProjets();
   const options: ProjetOption[] = projets.map((p) => ({
     id: p.id,

@@ -4,14 +4,15 @@ import type { ActionResult } from "./types";
 
 /**
  * Squelette commun des actions : re-validation Zod côté serveur, exécution,
- * revalidation. `fn` peut retourner `false` pour signaler « introuvable ».
- * Les erreurs DB ne sont jamais exposées telles quelles au client.
+ * revalidation. `fn` peut retourner `false` pour signaler « introuvable »,
+ * ou une valeur qui devient `data` du résultat. Les erreurs DB ne sont
+ * jamais exposées telles quelles au client.
  */
-export async function runAction<S extends z.ZodType>(
+export async function runAction<S extends z.ZodType, T = void>(
   schema: S,
   input: unknown,
-  fn: (data: z.output<S>) => Promise<boolean | void>,
-): Promise<ActionResult> {
+  fn: (data: z.output<S>) => Promise<T | false>,
+): Promise<ActionResult<T>> {
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -24,8 +25,9 @@ export async function runAction<S extends z.ZodType>(
     };
   }
 
+  let result: T | false;
   try {
-    const result = await fn(parsed.data);
+    result = await fn(parsed.data);
     if (result === false) {
       return { ok: false, error: "Élément introuvable" };
     }
@@ -34,7 +36,8 @@ export async function runAction<S extends z.ZodType>(
     return { ok: false, error: "Une erreur est survenue. Réessaie." };
   }
 
-  // Solo app : toutes les pages affichent ces données — revalidation globale.
+  // Solo app, toutes pages force-dynamic : revalidation globale sûre
+  // (aucun cache RSC par session).
   revalidatePath("/", "layout");
-  return { ok: true };
+  return { ok: true, data: result as T };
 }

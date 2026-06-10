@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requireOwner } from "@/lib/auth/guards";
 import { ClientFormDialog } from "@/components/projets/client-form-dialog";
 import { ProjetFormDialog } from "@/components/projets/projet-form-dialog";
 import { StatutBadge } from "@/components/missions/statut-badge";
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Projets" };
 
 export default async function ProjetsPage() {
+  await requireOwner();
   const [clients, projets] = await Promise.all([listClients(), listProjets()]);
   const clientOptions = clients.map((c) => ({ id: c.id, nom: c.nom }));
 

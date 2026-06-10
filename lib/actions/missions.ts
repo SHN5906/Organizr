@@ -28,7 +28,7 @@ export async function updateMissionAction(
 ): Promise<ActionResult> {
   return runAction(missionUpdateSchema, input, async (data) => {
     const updated = await updateMission(data);
-    return updated !== null;
+    if (updated === null) return false;
   });
 }
 
@@ -37,7 +37,7 @@ export async function updateMissionStatutAction(
 ): Promise<ActionResult> {
   return runAction(missionStatutSchema, input, async (data) => {
     const updated = await updateMissionStatut(data.id, data.statut);
-    return updated !== null;
+    if (updated === null) return false;
   });
 }
 
