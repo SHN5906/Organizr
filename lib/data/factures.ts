@@ -14,7 +14,9 @@ export type FactureWithClient = Facture & { client: Client };
 /**
  * Crée une facture figée : numero = compteur GLOBAL de la période
  * (FAC-AAAA-MM-XXX), revision = compteur par client × période.
- * Compteurs par count+1 sans transaction : race acceptée (usage solo).
+ * Compteurs en MAX+1 (pas count+1 : la suppression d'anciennes révisions
+ * créerait des collisions sur le numero UNIQUE). Sans transaction : race
+ * acceptée (usage solo). Suffixe à 3 chiffres — borne 999/période assumée.
  */
 export async function createFacture(input: {
   clientId: string;
@@ -24,12 +26,18 @@ export async function createFacture(input: {
 }): Promise<Facture> {
   const db = await getDb();
 
-  const [{ countPeriode }] = await db
-    .select({ countPeriode: sql<number>`count(*)::int` })
+  // max(numero) : préfixe fixe + suffixe zero-paddé → le max lexical EST
+  // le max numérique.
+  const [{ maxNumero }] = await db
+    .select({ maxNumero: sql<string | null>`max(${factures.numero})` })
     .from(factures)
     .where(eq(factures.periode, input.periode));
-  const [{ countClient }] = await db
-    .select({ countClient: sql<number>`count(*)::int` })
+  const dernierSuffixe = maxNumero ? Number(maxNumero.slice(-3)) : 0;
+
+  const [{ maxRevision }] = await db
+    .select({
+      maxRevision: sql<number | null>`max(${factures.revision})::int`,
+    })
     .from(factures)
     .where(
       and(
@@ -38,19 +46,42 @@ export async function createFacture(input: {
       ),
     );
 
-  const numero = `FAC-${input.periode}-${String(countPeriode + 1).padStart(3, "0")}`;
+  const numero = `FAC-${input.periode}-${String(dernierSuffixe + 1).padStart(3, "0")}`;
   const [facture] = await db
     .insert(factures)
     .values({
       clientId: input.clientId,
       periode: input.periode,
       numero,
-      revision: countClient + 1,
+      revision: (maxRevision ?? 0) + 1,
       lignes: input.lignes,
       totalTtc: input.totalTtc,
     })
     .returning();
   return facture;
+}
+
+/** Dernière révision d'un client sur une période (la facture « vivante »). */
+export async function latestFactureFor(
+  clientId: string,
+  periode: string,
+): Promise<Facture | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(factures)
+    .where(
+      and(eq(factures.clientId, clientId), eq(factures.periode, periode)),
+    )
+    .orderBy(desc(factures.revision))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Supprime une facture (les commandes pointant dessus passent à NULL). */
+export async function deleteFacture(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete(factures).where(eq(factures.id, id));
 }
 
 export async function getFacture(

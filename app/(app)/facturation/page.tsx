@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DeleteFactureButton } from "@/components/facturation/delete-facture-button";
 import { GenerateFactureButton } from "@/components/facturation/generate-facture-button";
 import { PeriodeNav } from "@/components/facturation/periode-nav";
 import { requireOwner } from "@/lib/auth/guards";
@@ -149,18 +150,29 @@ export default async function FacturationPage({
                 {facturesClient.length > 0 && (
                   <ul className="flex flex-col gap-1">
                     {facturesClient.map((f) => (
-                      <li key={f.id} className="text-xs text-muted-foreground">
-                        <Link
-                          href={`/facturation/${f.id}`}
-                          className="underline underline-offset-4 hover:text-foreground"
-                        >
-                          {f.numero}
-                        </Link>{" "}
-                        — révision {f.revision} ·{" "}
-                        <span className="tabular-nums">
-                          {formatCents(numericToCents(f.totalTtc))}
+                      <li
+                        key={f.id}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                      >
+                        <span>
+                          <Link
+                            href={`/facturation/${f.id}`}
+                            className="underline underline-offset-4 hover:text-foreground"
+                          >
+                            {f.numero}
+                          </Link>{" "}
+                          — révision {f.revision} ·{" "}
+                          <span className="tabular-nums">
+                            {formatCents(numericToCents(f.totalTtc))}
+                          </span>
+                          {derniere && f.id !== derniere.id && " (remplacée)"}
                         </span>
-                        {derniere && f.id !== derniere.id && " (remplacée)"}
+                        {derniere && f.id !== derniere.id && (
+                          <DeleteFactureButton
+                            factureId={f.id}
+                            numero={f.numero}
+                          />
+                        )}
                       </li>
                     ))}
                   </ul>

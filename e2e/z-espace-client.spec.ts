@@ -119,6 +119,30 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
     page.locator("article").getByText("160,00 €"),
   ).toBeVisible();
 
+  // 5b. Corbeille : régénérer (révision 2) puis supprimer la révision 1.
+  await page.goto("/facturation");
+  await page
+    .getByRole("button", { name: /Régénérer \(révision 2\)/ })
+    .click();
+  await page.waitForURL("**/facturation/**");
+  await page.goto("/facturation");
+  await expect(page.getByText("(remplacée)")).toBeVisible();
+  await page
+    .getByRole("button", { name: /Supprimer FAC-\d{4}-\d{2}-001/ })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Supprimer" })
+    .click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(
+    page.getByRole("link", { name: /FAC-\d{4}-\d{2}-001/ }),
+  ).toBeHidden();
+  await expect(page.getByText("(remplacée)")).toBeHidden();
+  await expect(
+    page.getByRole("link", { name: /FAC-\d{4}-\d{2}-002/ }),
+  ).toBeVisible();
+
   // 6. Isolation : Client B ne voit rien de Client A.
   const lienB = await inviteClient(page, "Client B");
   const ctxB = await browser.newContext({ storageState: EMPTY });

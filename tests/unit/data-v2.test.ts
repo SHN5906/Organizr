@@ -19,7 +19,9 @@ import {
 import { listCommandesForClient } from "@/lib/data/portal/commandes";
 import {
   createFacture,
+  deleteFacture,
   getFacture,
+  latestFactureFor,
   listFacturesForPeriode,
 } from "@/lib/data/factures";
 import { createProjet } from "@/lib/data/projets";
@@ -283,6 +285,45 @@ describe("factures", () => {
 
     const liste = await listFacturesForPeriode("2026-06");
     expect(liste).toHaveLength(3);
+  });
+
+  it("suppression d'une révision : numérotation toujours unique (max+1, pas count+1)", async () => {
+    const a = await seedClient("Client A");
+    const f1 = await createFacture({
+      clientId: a.id,
+      periode: "2026-06",
+      lignes: SNAPSHOT,
+      totalTtc: "84.00",
+    });
+    const f2 = await createFacture({
+      clientId: a.id,
+      periode: "2026-06",
+      lignes: SNAPSHOT,
+      totalTtc: "84.00",
+    });
+    expect([f1.numero, f2.numero]).toEqual([
+      "FAC-2026-06-001",
+      "FAC-2026-06-002",
+    ]);
+
+    await deleteFacture(f1.id);
+    expect(await getFacture(f1.id)).toBeNull();
+    expect((await listFacturesForPeriode("2026-06")).map((f) => f.id)).toEqual([
+      f2.id,
+    ]);
+
+    // count+1 redonnerait 002 (collision UNIQUE) ; max+1 donne 003.
+    const f3 = await createFacture({
+      clientId: a.id,
+      periode: "2026-06",
+      lignes: SNAPSHOT,
+      totalTtc: "84.00",
+    });
+    expect(f3.numero).toBe("FAC-2026-06-003");
+    expect(f3.revision).toBe(3); // max(revision)+1, même après suppression
+
+    const derniere = await latestFactureFor(a.id, "2026-06");
+    expect(derniere?.id).toBe(f3.id);
   });
 
   it("le snapshot JSONB est figé même si les commandes changent ensuite", async () => {
