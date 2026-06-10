@@ -35,6 +35,11 @@ const ligneFormSchema = z.object({
 
 const commandeFormSchema = z.object({
   lignes: z.array(ligneFormSchema).min(1, "Ajoute au moins une ligne").max(20),
+  tipEuros: z
+    .number("Tip invalide")
+    .min(0, "Le tip ne peut pas être négatif")
+    .max(1000, "Tip maximum : 1 000 €")
+    .optional(),
 });
 
 type CommandeFormValues = z.infer<typeof commandeFormSchema>;
@@ -55,9 +60,12 @@ function safeLineCents(type: CommandeFormValues["lignes"][number]["type"], quant
 }
 
 export function CommandeForm({
+  moisLabel,
   onSubmit,
   onSuccess,
 }: {
+  /** Mois de facturation courant, ex. « juin 2026 ». */
+  moisLabel: string;
   onSubmit: (input: unknown) => Promise<ActionResult<{ numero: number }>>;
   onSuccess?: () => void;
 }) {
@@ -67,6 +75,7 @@ export function CommandeForm({
     resolver: zodResolver(commandeFormSchema),
     defaultValues: {
       lignes: [{ type: "reel_simple", quantite: 1, brief: "" }],
+      tipEuros: undefined,
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -74,20 +83,28 @@ export function CommandeForm({
     name: "lignes",
   });
   const lignes = useWatch({ control: form.control, name: "lignes" });
+  const tipEuros = useWatch({ control: form.control, name: "tipEuros" });
   const { errors, isSubmitting } = form.formState;
 
-  const totalCents = (lignes ?? []).reduce((sum: number, l) => {
-    const cents = l ? safeLineCents(l.type, l.quantite) : null;
-    return cents ? sum + cents.total : sum;
-  }, 0);
+  const tipCents =
+    typeof tipEuros === "number" && tipEuros >= 0 && tipEuros <= 1000
+      ? Math.round(tipEuros * 100)
+      : 0;
+  const totalCents =
+    (lignes ?? []).reduce((sum: number, l) => {
+      const cents = l ? safeLineCents(l.type, l.quantite) : null;
+      return cents ? sum + cents.total : sum;
+    }, 0) + tipCents;
 
   if (confirme !== null) {
     return (
       <div className="flex flex-col items-start gap-3 border-y py-8">
-        <p className="text-base font-medium">Commande #{confirme} reçue.</p>
+        <p className="text-base font-medium">
+          Commande #{confirme} ajoutée à {moisLabel}.
+        </p>
         <p className="text-sm text-muted-foreground">
-          Elle apparaît dans ton historique ci-dessous — le montage démarre
-          de notre côté.
+          Elle apparaît dans ton historique ci-dessous et partira sur la
+          facture de {moisLabel} — le montage démarre de notre côté.
         </p>
         <Button
           variant="outline"
@@ -96,7 +113,7 @@ export function CommandeForm({
             setConfirme(null);
           }}
         >
-          Nouvelle commande
+          Ajouter d&apos;autres vidéos
         </Button>
       </div>
     );
@@ -109,6 +126,9 @@ export function CommandeForm({
         quantite: l.quantite,
         brief: l.brief,
       })),
+      ...(values.tipEuros !== undefined && values.tipEuros > 0
+        ? { tipEuros: values.tipEuros }
+        : {}),
     });
     if (!result.ok) {
       form.setError("root", { message: result.error });
@@ -209,7 +229,7 @@ export function CommandeForm({
         })}
       </ul>
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <Button
           type="button"
           variant="outline"
@@ -219,12 +239,38 @@ export function CommandeForm({
           <Plus aria-hidden data-icon="inline-start" />
           Ajouter une ligne
         </Button>
-        <p className="flex items-baseline gap-3 border-t-2 border-foreground pt-2">
-          <span className="text-sm font-medium">Total TTC</span>
-          <span className="text-base font-semibold tabular-nums">
-            {formatCents(totalCents)}
-          </span>
-        </p>
+
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor={`${uid}-tip`} className="text-muted-foreground">
+              Tip{" "}
+              <span className="font-normal">(optionnel)</span>
+            </Label>
+            <Input
+              id={`${uid}-tip`}
+              type="number"
+              min={0}
+              max={1000}
+              step={1}
+              placeholder="0"
+              className="w-20 text-right tabular-nums"
+              aria-invalid={!!errors.tipEuros}
+              aria-describedby={errors.tipEuros ? `${uid}-tip-error` : undefined}
+              {...form.register("tipEuros", {
+                setValueAs: (v) =>
+                  v === "" || v == null ? undefined : Number(v),
+              })}
+            />
+            <span className="text-sm text-muted-foreground">€</span>
+          </div>
+          <FieldError id={`${uid}-tip-error`} message={errors.tipEuros?.message} />
+          <p className="flex items-baseline gap-3 border-t-2 border-foreground pt-2">
+            <span className="text-sm font-medium">Total TTC</span>
+            <span className="text-base font-semibold tabular-nums">
+              {formatCents(totalCents)}
+            </span>
+          </p>
+        </div>
       </div>
 
       <FieldError message={errors.lignes?.root?.message ?? errors.lignes?.message} />
@@ -232,7 +278,7 @@ export function CommandeForm({
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Envoi…" : "Commander"}
+          {isSubmitting ? "Ajout…" : "Ajouter à ce mois"}
         </Button>
       </div>
     </form>

@@ -1,0 +1,1 @@
+ALTER TABLE "commandes" ADD COLUMN "tip" numeric(10, 2) DEFAULT '0.00' NOT NULL;

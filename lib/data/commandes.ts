@@ -27,11 +27,12 @@ export type CommandeComplete = CommandeWithLignes & { client: Client };
 export async function createCommandeWithLignes(
   clientId: string,
   lignes: CommandeLigneInput[],
+  tipCents = 0,
 ): Promise<CommandeWithLignes> {
   const db = await getDb();
   const [commande] = await db
     .insert(commandes)
-    .values({ clientId })
+    .values({ clientId, tip: centsToNumeric(tipCents) })
     .returning();
 
   const insertedLignes = await db

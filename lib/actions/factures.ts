@@ -40,16 +40,29 @@ export async function generateFactureAction(
       };
     }
 
-    const lignes: FactureLigneSnapshot[] = commandes.flatMap((commande) =>
-      commande.lignes.map((l) => ({
+    const lignes: FactureLigneSnapshot[] = commandes.flatMap((commande) => [
+      ...commande.lignes.map((l) => ({
         commandeNumero: commande.numero,
-        type: l.type,
+        type: l.type as FactureLigneSnapshot["type"],
         label: PRESTATION_LABELS[l.type],
         quantite: l.quantite,
         prixUnitaire: l.prixUnitaire,
         total: l.total,
       })),
-    );
+      // Le tip du client devient une ligne dédiée de la facture.
+      ...(numericToCents(commande.tip) > 0
+        ? [
+            {
+              commandeNumero: commande.numero,
+              type: "tip" as const,
+              label: "Tip",
+              quantite: 1,
+              prixUnitaire: commande.tip,
+              total: commande.tip,
+            },
+          ]
+        : []),
+    ]);
     const totalCents = lignes.reduce(
       (sum, l) => sum + numericToCents(l.total),
       0,

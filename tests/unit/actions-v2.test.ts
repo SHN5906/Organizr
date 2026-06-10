@@ -117,6 +117,23 @@ describe("createCommandeAction", () => {
     ).toBe("3 reels événement");
   });
 
+  it("enregistre le tip (euros → centimes) et le refuse négatif", async () => {
+    const client = await seedClientWithSession();
+    const result = await createCommandeAction({
+      lignes: [{ type: "video_longue", quantite: 1 }],
+      tipEuros: 6,
+    });
+    expect(result.ok).toBe(true);
+    const [commande] = await listCommandesForClient(client.id);
+    expect(commande.tip).toBe("6.00");
+
+    const negatif = await createCommandeAction({
+      lignes: [{ type: "video_longue", quantite: 1 }],
+      tipEuros: -1,
+    });
+    expect(negatif.ok).toBe(false);
+  });
+
   it("rejette quantité hors bornes, type inconnu, commande vide", async () => {
     await seedClientWithSession();
     for (const lignes of [
@@ -186,6 +203,26 @@ describe("generateFactureAction", () => {
     const [commande] = await listCommandesForClient(client.id);
     expect(commande.statut).toBe("facturee");
     expect(commande.factureId).toBe(result.data.factureId);
+  });
+
+  it("le tip apparaît sur la facture comme ligne dédiée et entre dans le total", async () => {
+    const client = await seedClientWithSession();
+    await createCommandeAction({ ...COMMANDE_154, tipEuros: 6 });
+    const db = await getDb();
+    await db.execute(
+      sql`UPDATE commandes SET created_at = '2026-06-10T10:00:00Z'`,
+    );
+    loginAsOwner();
+    const result = await generateFactureAction({
+      clientId: client.id,
+      periode: "2026-06",
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const facture = await getFacture(result.data.factureId);
+    expect(facture?.totalTtc).toBe("160.00"); // 154 + 6 de tip
+    const tipLigne = facture?.lignes.find((l) => l.type === "tip");
+    expect(tipLigne).toMatchObject({ label: "Tip", total: "6.00" });
   });
 
   it("régénération : révision 2 avec TOUTES les commandes de la période, factureId re-pointés", async () => {

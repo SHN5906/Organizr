@@ -130,6 +130,23 @@ describe("commandes", () => {
     expect(c2.numero).toBe(2);
   });
 
+  it("enregistre le tip (défaut 0,00)", async () => {
+    const client = await seedClient();
+    const sans = await createCommandeWithLignes(client.id, [
+      { ...LIGNE_1_LONGUE, totalCents: 7000 },
+    ]);
+    expect(sans.tip).toBe("0.00");
+
+    const avec = await createCommandeWithLignes(
+      client.id,
+      [{ ...LIGNE_1_LONGUE, totalCents: 7000 }],
+      600,
+    );
+    expect(avec.tip).toBe("6.00");
+    const [relue] = await listCommandesForClient(client.id);
+    expect(relue.tip).toBe("6.00");
+  });
+
   it("rattache un projet à la commande", async () => {
     const client = await seedClient();
     const projet = await createProjet({
