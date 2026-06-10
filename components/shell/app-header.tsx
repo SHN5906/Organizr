@@ -25,15 +25,15 @@ export function AppHeader() {
           <NavLink href="/facturation">Facturation</NavLink>
         </nav>
         <div className="ml-auto flex items-center gap-3">
-          <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-            <kbd className="rounded-sm border px-1.5 py-0.5 font-sans text-[11px]">
-              n
-            </kbd>
-            nouvelle mission
-          </span>
           <Button size="sm" onClick={openQuickAdd} aria-label="Nouvelle mission">
             <Plus aria-hidden data-icon="inline-start" />
             <span className="hidden sm:inline">Nouvelle mission</span>
+            <kbd
+              aria-hidden
+              className="hidden rounded-sm border border-primary-foreground/40 px-1 font-sans text-[11px] leading-4 text-primary-foreground/80 sm:inline-block"
+            >
+              n
+            </kbd>
           </Button>
           <form action={logoutOwnerAction}>
             <Button
