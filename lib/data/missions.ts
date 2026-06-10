@@ -79,6 +79,18 @@ export async function createMission(
   return row;
 }
 
+/** Insert multi-values UNIQUE (pas de transactions neon-http : 1 requête). */
+export async function createMissionsBulk(
+  projetId: string,
+  items: Array<{ titre: string; notes: string | null }>,
+): Promise<void> {
+  if (items.length === 0) return;
+  const db = await getDb();
+  await db
+    .insert(missions)
+    .values(items.map((m) => ({ projetId, titre: m.titre, notes: m.notes })));
+}
+
 export async function updateMission(
   input: MissionUpdateInput,
 ): Promise<Mission | null> {
