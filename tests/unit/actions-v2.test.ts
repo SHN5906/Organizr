@@ -27,7 +27,10 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import { getDb } from "@/lib/db";
 import { createCommandeAction } from "@/lib/actions/commandes";
-import { generateFactureAction } from "@/lib/actions/factures";
+import {
+  deleteFactureAction,
+  generateFactureAction,
+} from "@/lib/actions/factures";
 import {
   CLIENT_COOKIE,
   OWNER_COOKIE,
@@ -280,6 +283,46 @@ describe("generateFactureAction", () => {
     expect(facture?.totalTtc).toBe("160.00"); // 154 + 6 de tip
     const tipLigne = facture?.lignes.find((l) => l.type === "tip");
     expect(tipLigne).toMatchObject({ label: "Tip", total: "6.00" });
+  });
+
+  it("deleteFactureAction : owner only, supprime une ancienne révision, refuse la dernière", async () => {
+    const client = await seedCommandeEnJuin();
+    loginAsOwner();
+    const rev1 = await generateFactureAction({
+      clientId: client.id,
+      periode: "2026-06",
+    });
+    if (!rev1.ok) throw new Error("rev1 ko");
+    const rev2 = await generateFactureAction({
+      clientId: client.id,
+      periode: "2026-06",
+    });
+    if (!rev2.ok) throw new Error("rev2 ko");
+
+    // Pas owner → redirect.
+    jar.clear();
+    await expect(
+      deleteFactureAction({ id: rev1.data.factureId }),
+    ).rejects.toThrow("REDIRECT:/connexion");
+
+    loginAsOwner();
+    // La DERNIÈRE révision est refusée, même en forgeant la requête.
+    const refus = await deleteFactureAction({ id: rev2.data.factureId });
+    expect(refus.ok).toBe(false);
+    if (!refus.ok) expect(refus.error).toMatch(/dernière révision/i);
+
+    // L'ancienne révision part ; la dernière et les commandes restent intactes.
+    const ok = await deleteFactureAction({ id: rev1.data.factureId });
+    expect(ok.ok).toBe(true);
+    expect(await getFacture(rev1.data.factureId)).toBeNull();
+    expect(await getFacture(rev2.data.factureId)).not.toBeNull();
+    const [commande] = await listCommandesForClient(client.id);
+    expect(commande.statut).toBe("facturee");
+    expect(commande.factureId).toBe(rev2.data.factureId);
+
+    // Facture inexistante → introuvable propre.
+    const fantome = await deleteFactureAction({ id: rev1.data.factureId });
+    expect(fantome.ok).toBe(false);
   });
 
   it("régénération : révision 2 avec TOUTES les commandes de la période, factureId re-pointés", async () => {

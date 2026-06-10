@@ -6,7 +6,13 @@ import {
   listCommandesForPeriode,
   markFacturees,
 } from "@/lib/data/commandes";
-import { createFacture } from "@/lib/data/factures";
+import {
+  createFacture,
+  deleteFacture,
+  getFacture,
+  latestFactureFor,
+} from "@/lib/data/factures";
+import { z } from "zod";
 import type { FactureLigneSnapshot } from "@/lib/db/schema";
 import {
   centsToNumeric,
@@ -88,6 +94,43 @@ export async function generateFactureAction(
         revision: facture.revision,
       },
     };
+  } catch (error) {
+    console.error("[action]", error);
+    return { ok: false, error: "Une erreur est survenue. Réessaie." };
+  }
+}
+
+const factureDeleteSchema = z.object({ id: z.uuid() });
+
+/**
+ * Supprime une ANCIENNE révision de facture. La dernière révision d'un
+ * client × période est refusée même si la requête est forgée : c'est la
+ * facture vivante, on la remplace (régénération), on ne la supprime pas.
+ */
+export async function deleteFactureAction(
+  input: unknown,
+): Promise<ActionResult> {
+  await requireOwner();
+
+  const parsed = factureDeleteSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Facture invalide" };
+
+  try {
+    const facture = await getFacture(parsed.data.id);
+    if (!facture) return { ok: false, error: "Facture introuvable" };
+
+    const derniere = await latestFactureFor(facture.clientId, facture.periode);
+    if (derniere?.id === facture.id) {
+      return {
+        ok: false,
+        error:
+          "La dernière révision ne peut pas être supprimée — régénère la facture si besoin.",
+      };
+    }
+
+    await deleteFacture(facture.id);
+    revalidatePath("/", "layout");
+    return { ok: true, data: undefined };
   } catch (error) {
     console.error("[action]", error);
     return { ok: false, error: "Une erreur est survenue. Réessaie." };
