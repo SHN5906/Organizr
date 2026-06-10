@@ -7,6 +7,22 @@ visualiser tous les projets et deadlines sur un calendrier mensuel monochrome.
 **Production** : https://organizr-zeta.vercel.app (Vercel `shn5906s-projects` +
 Neon `neon-coffee-pocket`). Raccourci : `n` → nouvelle mission.
 
+## v2 — Espace client
+
+- **Interne** (owner) : protégé par mot de passe (`/connexion`, `OWNER_PASSWORD`).
+- **Espace client** (`/espace`) : accès par **lien magique** généré depuis
+  Projets → « Inviter » (lien valable 14 j, session 90 j, révocable à effet
+  immédiat). Aucun mot de passe client, aucun email automatique : tu copies
+  le lien et l'envoies toi-même.
+- **Commandes** : le client choisit ses prestations (grille ReNew Editing TTC,
+  dégressive par ligne ; vidéo longue 70 €), la commande crée automatiquement
+  un projet + une mission par vidéo dans ton dashboard.
+- **Facturation** (`/facturation`) : par client × mois, facture print-ready
+  `FAC-AAAA-MM-XXX` (impression PDF par le navigateur), régénération = révision.
+
+Variables d'environnement supplémentaires : `OWNER_PASSWORD`, `SESSION_SECRET`
+(générées, posées sur Vercel — voir `.env.example`).
+
 ## Stack
 
 Next.js 15 (App Router, React 19, Server Actions) · TypeScript strict · pnpm ·
@@ -24,6 +40,14 @@ pnpm dev               # http://localhost:3000
 Sans `DATABASE_URL`, la base est un Postgres embarqué (PGlite) stocké dans
 `.pglite/`, migré automatiquement au démarrage. Avec `DATABASE_URL` (Neon),
 applique les migrations : `pnpm db:migrate`.
+
+⚠️ Après un `vercel env pull`, `.env.local` contient la `DATABASE_URL` de
+**production** — `.env.development.local` (non versionné) force `pnpm dev`
+sur PGlite pour ne jamais développer contre la prod :
+
+```bash
+printf 'DATABASE_URL=\nPGLITE_DATA_DIR=.pglite\n' > .env.development.local
+```
 
 ## Scripts
 
