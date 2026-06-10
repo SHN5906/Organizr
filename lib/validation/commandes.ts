@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { QUANTITE_MAX, TYPES_PRESTATION } from "@/lib/pricing";
-import { optionalText } from "./shared";
+import { optionalTextMax } from "./shared";
 
 /**
  * AUCUN champ prix : les montants affichés côté client sont purement
@@ -14,7 +14,7 @@ export const commandeLigneSchema = z.object({
     .int("Quantité entière requise")
     .min(1, "Quantité minimale : 1")
     .max(QUANTITE_MAX, `Quantité maximale : ${QUANTITE_MAX}`),
-  brief: optionalText,
+  brief: optionalTextMax(2000, "Brief trop long (2 000 caractères max)"),
 });
 
 export const commandeCreateSchema = z.object({
@@ -27,14 +27,18 @@ export const commandeCreateSchema = z.object({
     .min(0, "Le tip ne peut pas être négatif")
     .max(1000, "Tip maximum : 1 000 €")
     .optional(),
-  lienSwisstransfer: z.preprocess(
-    (v) => (v == null || v === "" ? undefined : v),
-    z
-      .url("Lien invalide")
-      .startsWith("https://", "Le lien doit commencer par https://")
-      .max(500, "Lien trop long")
-      .optional(),
-  ),
+  liens: z
+    .array(
+      z.object({
+        titre: optionalTextMax(100, "Titre trop long (100 caractères max)"),
+        url: z
+          .url("Lien invalide")
+          .startsWith("https://", "Le lien doit commencer par https://")
+          .max(500, "Lien trop long"),
+      }),
+    )
+    .max(10, "10 liens maximum")
+    .optional(),
 });
 
 export type CommandeCreateInput = z.infer<typeof commandeCreateSchema>;

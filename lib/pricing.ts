@@ -5,18 +5,31 @@
  * par tests/unit/pricing.test.ts.
  */
 
+// video_essentiel est AJOUTÉ EN FIN : l'ordre du tableau suit l'ordre de
+// l'enum Postgres (ALTER TYPE ADD VALUE, sans BEFORE).
 export const TYPES_PRESTATION = [
   "reel_simple",
   "reel_complexe",
   "video_longue",
+  "video_essentiel",
 ] as const;
 
 export type TypePrestation = (typeof TYPES_PRESTATION)[number];
+
+// Ordre de PRÉSENTATION (catalogue, select) — découplé de l'ordre de
+// l'enum ci-dessus, qui reste append-only.
+export const TYPES_PRESTATION_AFFICHAGE: readonly TypePrestation[] = [
+  "reel_simple",
+  "reel_complexe",
+  "video_essentiel",
+  "video_longue",
+];
 
 export const PRESTATION_LABELS: Record<TypePrestation, string> = {
   reel_simple: "Reel — montage simple",
   reel_complexe: "Reel — montage complexe",
   video_longue: "Vidéo longue",
+  video_essentiel: "Vidéo essentielle",
 };
 
 export const PRESTATION_DESCRIPTIONS: Record<TypePrestation, string> = {
@@ -24,7 +37,13 @@ export const PRESTATION_DESCRIPTIONS: Record<TypePrestation, string> = {
   reel_complexe:
     "Cuts, transitions, sous-titres, colorimétrie avancée, short créatif.",
   video_longue: "Montage de vidéo longue — tarif unique.",
+  video_essentiel: "Montage essentiel : cut et calage simples — tarif unique.",
 };
+
+/** Les reels suivent la grille dégressive ; les vidéos sont à tarif unique. */
+export function isDegressif(type: TypePrestation): boolean {
+  return type === "reel_simple" || type === "reel_complexe";
+}
 
 /** Quantité maximale par ligne de commande. */
 export const QUANTITE_MAX = 50;
@@ -34,6 +53,7 @@ const PALIER_MAX = 30;
 
 const COMPLEXE_SUPPLEMENT_CENTS = 1000; // +10 €/u à toute quantité
 const VIDEO_LONGUE_CENTS = 7000; // 70 €/u flat
+const VIDEO_ESSENTIEL_CENTS = 1500; // 15 €/u flat
 
 function assertQuantite(quantite: number): void {
   if (
@@ -65,6 +85,8 @@ export function unitPriceCents(
       return simpleUnitCents(quantite) + COMPLEXE_SUPPLEMENT_CENTS;
     case "video_longue":
       return VIDEO_LONGUE_CENTS;
+    case "video_essentiel":
+      return VIDEO_ESSENTIEL_CENTS;
   }
 }
 

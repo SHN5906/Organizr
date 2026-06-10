@@ -119,3 +119,16 @@ export function formatDayFr(
   if (!value) return null;
   return format(parseDay(value), pattern, { locale: fr });
 }
+
+/**
+ * Instant (timestamptz) → jour formaté FR dans le fuseau applicatif.
+ * À utiliser pour afficher les `createdAt` : toISOString() donnerait le
+ * jour UTC, en désaccord avec le regroupement par mois (periodeOf).
+ */
+export function formatInstantDayFr(
+  instant: Date,
+  pattern = "d MMM yyyy",
+): string {
+  const day = dayInZone(instant, process.env.APP_TZ || "Europe/Paris");
+  return format(day, pattern, { locale: fr });
+}

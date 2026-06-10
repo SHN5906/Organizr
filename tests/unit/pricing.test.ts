@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  isDegressif,
   centsToNumeric,
   formatCents,
   lineTotalCents,
   NBSP_EURO,
   PRESTATION_LABELS,
   TYPES_PRESTATION,
+  TYPES_PRESTATION_AFFICHAGE,
   unitPriceCents,
 } from "@/lib/pricing";
 
@@ -55,6 +57,16 @@ describe("unitPriceCents — grille PDF complète", () => {
     for (const q of [1, 2, 10, 30, 50]) {
       expect(unitPriceCents("video_longue", q)).toBe(7000);
     }
+  });
+
+  it("video_essentiel : 15 €/u flat, aucune dégressivité", () => {
+    for (const q of [1, 2, 10, 30, 50]) {
+      expect(unitPriceCents("video_essentiel", q)).toBe(1500);
+    }
+    expect(lineTotalCents("video_essentiel", 4)).toBe(6000);
+    expect(isDegressif("video_essentiel")).toBe(false);
+    expect(isDegressif("reel_simple")).toBe(true);
+    expect(isDegressif("video_longue")).toBe(false);
   });
 
   it("q > 30 : prix du palier 30", () => {
@@ -109,14 +121,30 @@ describe("formatCents / centsToNumeric", () => {
 });
 
 describe("catalogue", () => {
-  it("expose les 3 prestations avec leurs labels FR", () => {
+  it("expose les 4 prestations avec leurs labels FR", () => {
+    // video_essentiel est AJOUTÉ EN FIN : l'ordre du tableau est l'ordre de
+    // l'enum Postgres (ALTER TYPE ADD VALUE).
     expect(TYPES_PRESTATION).toEqual([
       "reel_simple",
       "reel_complexe",
       "video_longue",
+      "video_essentiel",
     ]);
     expect(PRESTATION_LABELS.reel_simple).toMatch(/simple/i);
     expect(PRESTATION_LABELS.reel_complexe).toMatch(/complexe/i);
     expect(PRESTATION_LABELS.video_longue).toMatch(/longue/i);
+    // Accord : « Vidéo essentielle » (comme « Vidéo longue »).
+    expect(PRESTATION_LABELS.video_essentiel).toMatch(/essentielle/i);
+  });
+
+  it("ordre d'AFFICHAGE découplé de l'ordre de l'enum Postgres", () => {
+    // Même contenu (permutation), mais la vidéo essentielle est présentée
+    // avant la vidéo longue dans le catalogue et le select.
+    expect([...TYPES_PRESTATION_AFFICHAGE].sort()).toEqual(
+      [...TYPES_PRESTATION].sort(),
+    );
+    expect(
+      TYPES_PRESTATION_AFFICHAGE.indexOf("video_essentiel"),
+    ).toBeLessThan(TYPES_PRESTATION_AFFICHAGE.indexOf("video_longue"));
   });
 });

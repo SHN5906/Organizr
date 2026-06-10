@@ -13,6 +13,7 @@ import {
 import {
   createCommandeWithLignes,
   listCommandesForPeriode,
+  listCommandesForProjets,
   markFacturees,
   setCommandeProjet,
 } from "@/lib/data/commandes";
@@ -133,17 +134,21 @@ describe("commandes", () => {
     expect(c2.numero).toBe(2);
   });
 
-  it("enregistre le lien SwissTransfer et le brief PDF (hors des listes)", async () => {
+  it("enregistre plusieurs liens titrés et le brief PDF (hors des listes)", async () => {
     const client = await seedClient();
     const commande = await createCommandeWithLignes(
       client.id,
       [{ ...LIGNE_1_LONGUE, totalCents: 7000 }],
       0,
-      "https://www.swisstransfer.com/d/abc123",
+      [
+        { titre: "Rushs jour 1", url: "https://www.swisstransfer.com/d/abc" },
+        { titre: null, url: "https://www.swisstransfer.com/d/def" },
+      ],
     );
-    expect(commande.lienSwisstransfer).toBe(
-      "https://www.swisstransfer.com/d/abc123",
-    );
+    expect(commande.liens.map((l) => [l.titre, l.url])).toEqual([
+      ["Rushs jour 1", "https://www.swisstransfer.com/d/abc"],
+      [null, "https://www.swisstransfer.com/d/def"],
+    ]);
 
     const contenu = Buffer.from("%PDF-1.4\nfake\n%%EOF").toString("base64");
     await saveBrief(commande.id, {
@@ -152,14 +157,38 @@ describe("commandes", () => {
       contenu,
     });
 
-    // Les listes portent les métadonnées (nom) mais JAMAIS le contenu.
+    // Les listes portent liens + métadonnées du brief, JAMAIS le contenu.
     const [row] = await listCommandesForClient(client.id);
     expect(row.briefNom).toBe("brief-juin.pdf");
+    expect(row.liens).toHaveLength(2);
+    expect(row.liens[0].titre).toBe("Rushs jour 1");
     expect(JSON.stringify(row)).not.toContain(contenu);
     const [interne] = await listCommandesForPeriode(
       periodeOf(new Date()),
     );
     expect(interne.briefNom).toBe("brief-juin.pdf");
+    expect(interne.liens.map((l) => l.url)).toEqual([
+      "https://www.swisstransfer.com/d/abc",
+      "https://www.swisstransfer.com/d/def",
+    ]);
+
+    // Commandes par projet (page Projets : fichiers visibles côté interne).
+    const projet = await createProjet({
+      clientId: client.id,
+      type: "montage_video",
+      titre: "Commande #1 — Client A",
+      description: null,
+      statut: "a_faire",
+      deadline: null,
+    });
+    await setCommandeProjet(commande.id, projet.id);
+    const parProjet = await listCommandesForProjets([projet.id]);
+    expect(parProjet).toHaveLength(1);
+    expect(parProjet[0].projetId).toBe(projet.id);
+    expect(parProjet[0].numero).toBe(commande.numero);
+    expect(parProjet[0].liens).toHaveLength(2);
+    expect(parProjet[0].briefNom).toBe("brief-juin.pdf");
+    expect(await listCommandesForProjets([])).toEqual([]);
 
     // Lecture complète : contenu + clientId pour l'autorisation de la route.
     const brief = await getBrief(commande.id);

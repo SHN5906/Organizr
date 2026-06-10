@@ -7,13 +7,16 @@ import {
   commandes,
   type Commande,
   type CommandeLigne,
+  type LienPartage,
 } from "@/lib/db/schema";
+import { liensByCommande } from "@/lib/data/commandes";
 
 // Couche PORTAIL : chaque fonction exige un clientId qui provient TOUJOURS
 // de la session (lib/auth/guards), jamais d'un paramètre de requête.
 
 export type PortalCommande = Commande & {
   lignes: CommandeLigne[];
+  liens: LienPartage[];
   briefNom: string | null;
 };
 
@@ -50,9 +53,11 @@ export async function listCommandesForClient(
     list.push(ligne);
     byCommande.set(ligne.commandeId, list);
   }
+  const liens = await liensByCommande(rows.map((r) => r.commande.id));
   return rows.map((r) => ({
     ...r.commande,
     briefNom: r.briefNom,
     lignes: byCommande.get(r.commande.id) ?? [],
+    liens: liens.get(r.commande.id) ?? [],
   }));
 }

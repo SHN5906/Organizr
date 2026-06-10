@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clientCreateSchema } from "@/lib/validation/clients";
+import { commandeCreateSchema } from "@/lib/validation/commandes";
 import { projetCreateSchema } from "@/lib/validation/projets";
 import {
   missionCreateSchema,
@@ -24,6 +25,38 @@ describe("clientCreateSchema", () => {
     const r = clientCreateSchema.parse({ nom: "  ACME  ", contact: "" });
     expect(r.nom).toBe("ACME");
     expect(r.contact).toBeNull();
+  });
+});
+
+describe("commandeCreateSchema — bornes des champs libres", () => {
+  const lignes = [{ type: "reel_simple", quantite: 1, brief: "" }];
+  const url = "https://www.swisstransfer.com/d/abc";
+
+  it("rejette un titre de lien > 100 caractères", () => {
+    const r = commandeCreateSchema.safeParse({
+      lignes,
+      liens: [{ titre: "x".repeat(101), url }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("titre vide ou espaces → null ; 100 caractères passent", () => {
+    const r = commandeCreateSchema.parse({
+      lignes,
+      liens: [
+        { titre: "  ", url },
+        { titre: "y".repeat(100), url },
+      ],
+    });
+    expect(r.liens?.[0].titre).toBeNull();
+    expect(r.liens?.[1].titre).toBe("y".repeat(100));
+  });
+
+  it("rejette un brief de ligne > 2000 caractères", () => {
+    const r = commandeCreateSchema.safeParse({
+      lignes: [{ type: "reel_simple", quantite: 1, brief: "x".repeat(2001) }],
+    });
+    expect(r.success).toBe(false);
   });
 });
 
