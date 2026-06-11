@@ -17,7 +17,7 @@ export async function runAction<S extends z.ZodType, T = void>(
   if (!parsed.success) {
     return {
       ok: false,
-      error: "Saisie invalide",
+      error: "Saisie invalide.",
       fieldErrors: z.flattenError(parsed.error).fieldErrors as Record<
         string,
         string[]
@@ -29,7 +29,7 @@ export async function runAction<S extends z.ZodType, T = void>(
   try {
     result = await fn(parsed.data);
     if (result === false) {
-      return { ok: false, error: "Élément introuvable" };
+      return { ok: false, error: "Élément introuvable." };
     }
   } catch (error) {
     console.error("[action]", error);

@@ -27,16 +27,15 @@ export function GenerateFactureButton({
         onClick={async () => {
           setError(null);
           setPending(true);
-          try {
-            const result = await generateFactureAction({ clientId, periode });
-            if (!result.ok) {
-              setError(result.error);
-              return;
-            }
-            router.push(`/facturation/${result.data.factureId}`);
-          } finally {
+          const result = await generateFactureAction({ clientId, periode });
+          if (!result.ok) {
+            setError(result.error);
             setPending(false);
+            return;
           }
+          // PAS de finally : le bouton reste désarmé jusqu'à ce que la
+          // navigation le démonte — aucun double-clic possible entre-temps.
+          router.push(`/facturation/${result.data.factureId}`);
         }}
       >
         {pending
@@ -46,7 +45,7 @@ export function GenerateFactureButton({
             : "Générer la facture"}
       </Button>
       {error && (
-        <span role="alert" className="text-xs font-medium">
+        <span role="alert" className="text-xs font-medium text-foreground">
           {error}
         </span>
       )}

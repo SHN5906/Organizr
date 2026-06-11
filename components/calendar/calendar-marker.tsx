@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import type { CalendarItem } from "@/lib/data/missions";
 
 export const KIND_LABELS: Record<CalendarItem["kind"], string> = {
-  mission_planifiee: "Planifiée",
+  mission_planifiee: "Mission planifiée",
   deadline_mission: "Deadline mission",
   deadline_projet: "Deadline projet",
 };

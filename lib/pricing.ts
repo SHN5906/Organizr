@@ -36,8 +36,8 @@ export const PRESTATION_DESCRIPTIONS: Record<TypePrestation, string> = {
   reel_simple: "Cuts, transitions, colorimétrie légère ou LUT fournie.",
   reel_complexe:
     "Cuts, transitions, sous-titres, colorimétrie avancée, short créatif.",
-  video_longue: "Montage de vidéo longue — tarif unique.",
-  video_essentiel: "Montage essentiel : cut et calage simples — tarif unique.",
+  video_longue: "Montage de vidéo longue.",
+  video_essentiel: "Montage essentiel : cut et calage simples.",
 };
 
 /** Les reels suivent la grille dégressive ; les vidéos sont à tarif unique. */

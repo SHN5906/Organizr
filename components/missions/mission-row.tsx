@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { CalendarDays, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import { CalendarMarker } from "@/components/calendar/calendar-marker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -88,7 +89,7 @@ export function MissionRow({
   const termine = mission.statut === "termine";
 
   return (
-    <li className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 py-3 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)_auto_auto_auto] md:gap-x-6">
+    <li className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 py-3 transition-colors hover:bg-accent md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)_auto_auto_auto] md:gap-x-6">
       <div className="min-w-0">
         <p
           className={cn(
@@ -99,25 +100,27 @@ export function MissionRow({
           {mission.titre}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {mission.projet.titre} · {mission.client.nom} ·{" "}
-          {TYPE_LABELS[mission.projet.type]}
+          {mission.projet.titre}
+          {/* Les projets issus de commandes contiennent déjà le nom du
+              client dans leur titre : on ne le répète pas. */}
+          {!mission.projet.titre.includes(mission.client.nom) &&
+            ` · ${mission.client.nom}`}
+          {` · ${TYPE_LABELS[mission.projet.type]}`}
         </p>
       </div>
 
+      {/* Mêmes glyphes que le calendrier : ● planifiée, ○ deadline. */}
       <div className="col-span-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground tabular-nums md:col-span-1 md:justify-end">
         {mission.datePlanifiee && (
           <span className="inline-flex items-center gap-1.5">
-            <CalendarDays aria-hidden className="size-3.5" />
+            <CalendarMarker kind="mission_planifiee" />
             <span className="sr-only">Planifiée le</span>
             {formatDayFr(mission.datePlanifiee, "EEE d MMM")}
           </span>
         )}
         {mission.deadline && (
           <span className="inline-flex items-center gap-1.5">
-            <span
-              aria-hidden
-              className="inline-block size-2 rounded-full border border-foreground"
-            />
+            <CalendarMarker kind="deadline_mission" />
             <span className="sr-only">Deadline le</span>
             {formatDayFr(mission.deadline, "EEE d MMM")}
           </span>
@@ -131,8 +134,7 @@ export function MissionRow({
       <div className="flex items-center justify-end gap-1">
         <Button
           variant="ghost"
-          size="icon"
-          className="size-8"
+          size="icon-sm"
           aria-label={`Modifier « ${mission.titre} »`}
           onClick={() => setEditOpen(true)}
         >
@@ -140,8 +142,7 @@ export function MissionRow({
         </Button>
         <Button
           variant="ghost"
-          size="icon"
-          className="size-8"
+          size="icon-sm"
           aria-label={`Supprimer « ${mission.titre} »`}
           onClick={() => setDeleteOpen(true)}
         >

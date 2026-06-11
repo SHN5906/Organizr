@@ -140,7 +140,10 @@ export function MonthGrid({
                       type="button"
                       aria-label={dayLabel(day, items.length)}
                       onClick={() => setSelectedDay(day.date)}
-                      className="hover:bg-accent block h-full w-full p-1.5 text-left transition-colors duration-150"
+                      // Outline de focus DESSINÉ VERS L'INTÉRIEUR : le
+                      // conteneur de grille rogne (overflow-hidden) tout
+                      // ce qui dépasse de la cellule.
+                      className="hover:bg-accent block h-full w-full p-1.5 text-left transition-colors focus-visible:-outline-offset-2"
                     >
                       <CellContent day={day} items={items} />
                     </button>
@@ -162,7 +165,9 @@ export function MonthGrid({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="capitalize">
+            {/* first-letter : en français seul le premier mot se capitalise
+                (« Mercredi 11 juin 2026 », pas « Mercredi 11 Juin 2026 »). */}
+            <DialogTitle className="first-letter:uppercase">
               {selectedDay &&
                 format(parseDay(selectedDay), "EEEE d MMMM yyyy", {
                   locale: fr,
@@ -176,7 +181,7 @@ export function MonthGrid({
           <ul className="divide-y border-y">
             {selectedItems.map((item, i) => (
               <li key={i} className="flex items-center gap-3 py-2.5">
-                <CalendarMarker kind={item.kind} className="mt-0.5" />
+                <CalendarMarker kind={item.kind} />
                 <div className="min-w-0 flex-1">
                   <p
                     className={cn(

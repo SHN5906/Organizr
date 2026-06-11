@@ -44,8 +44,8 @@ export function MissionForm({
   mode = "create",
   defaultProjetId,
   defaultValues,
-  submitLabel = "Ajouter",
-  pendingLabel = mode === "edit" ? "Enregistrement…" : "Ajout en cours…",
+  submitLabel = mode === "edit" ? "Enregistrer" : "Créer la mission",
+  pendingLabel = mode === "edit" ? "Enregistrement…" : "Création…",
   onSubmit,
   onSuccess,
 }: MissionFormProps) {

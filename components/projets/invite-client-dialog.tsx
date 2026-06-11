@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Check, Copy, UserPlus } from "lucide-react";
+import { FieldError } from "@/components/forms/field-error";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,7 +18,7 @@ import {
   revokeInvitationAction,
 } from "@/lib/actions/auth";
 import type { ActionResult } from "@/lib/actions/types";
-import { formatDayFr } from "@/lib/format";
+import { formatInstantDayFr } from "@/lib/format";
 
 export type InvitationRow = {
   id: string;
@@ -51,18 +52,30 @@ export function InviteClientDialog({
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [revokeError, setRevokeError] = React.useState<string | null>(null);
+  const [revoking, startRevoke] = React.useTransition();
 
   const actifs = invitations.filter(
     (i) => !i.revokedAt && new Date(i.expiresAt).getTime() > Date.now(),
   );
 
   return (
-    <Dialog onOpenChange={() => setCopied(false)}>
+    <Dialog
+      onOpenChange={(open) => {
+        // Reset complet à la fermeture : le lien n'est montré qu'une fois,
+        // et le bouton « Générer » doit redevenir accessible.
+        if (!open) {
+          setGenerated(null);
+          setError(null);
+          setRevokeError(null);
+        }
+        setCopied(false);
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className="size-8"
+          size="icon-sm"
           aria-label={`Inviter ${clientNom}`}
         >
           <UserPlus aria-hidden className="size-4" />
@@ -72,8 +85,8 @@ export function InviteClientDialog({
         <DialogHeader>
           <DialogTitle>Accès espace client</DialogTitle>
           <DialogDescription>
-            {clientNom} — génère un lien d&apos;accès et envoie-le toi-même
-            (le lien n&apos;est montré qu&apos;une fois).
+            Génère un lien d&apos;accès pour {clientNom} et envoie-le
+            toi-même. Le lien n&apos;est montré qu&apos;une fois.
           </DialogDescription>
         </DialogHeader>
 
@@ -105,8 +118,8 @@ export function InviteClientDialog({
               </div>
               <p className="text-xs text-muted-foreground">
                 Valable jusqu&apos;au{" "}
-                {formatDayFr(generated.expiresAt.slice(0, 10))} — la session du
-                client durera ensuite 90 jours.
+                {formatInstantDayFr(new Date(generated.expiresAt))}. La session
+                du client durera ensuite 90 jours.
               </p>
             </div>
           ) : (
@@ -127,11 +140,7 @@ export function InviteClientDialog({
               >
                 {pending ? "Génération…" : "Générer un lien d'accès"}
               </Button>
-              {error && (
-                <p role="alert" className="text-xs font-medium">
-                  {error}
-                </p>
-              )}
+              <FieldError message={error ?? undefined} />
             </div>
           )}
 
@@ -147,20 +156,30 @@ export function InviteClientDialog({
                     className="flex items-center justify-between gap-3 py-2 text-xs"
                   >
                     <span className="text-muted-foreground tabular-nums">
-                      créé le {formatDayFr(inv.createdAt.slice(0, 10))} ·
-                      expire le {formatDayFr(inv.expiresAt.slice(0, 10))}
+                      créé le {formatInstantDayFr(new Date(inv.createdAt))} ·
+                      expire le {formatInstantDayFr(new Date(inv.expiresAt))}
                       {inv.lastUsedAt ? " · utilisé" : " · jamais utilisé"}
                     </span>
                     <Button
                       variant="outline"
                       size="xs"
-                      onClick={() => revokeAction({ id: inv.id })}
+                      disabled={revoking}
+                      onClick={() =>
+                        startRevoke(async () => {
+                          setRevokeError(null);
+                          const result = await revokeAction({ id: inv.id });
+                          if (result && !result.ok) {
+                            setRevokeError(result.error);
+                          }
+                        })
+                      }
                     >
-                      Révoquer
+                      {revoking ? "Révocation…" : "Révoquer"}
                     </Button>
                   </li>
                 ))}
               </ul>
+              <FieldError message={revokeError ?? undefined} />
               <p className="text-xs text-muted-foreground">
                 Révoquer coupe l&apos;accès immédiatement, sessions en cours
                 comprises.

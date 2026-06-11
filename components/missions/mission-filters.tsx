@@ -26,7 +26,7 @@ export function MissionFilters({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = React.useTransition();
+  const [isPending, startTransition] = React.useTransition();
   // Optimiste : les selects contrôlés par l'URL re-snapperaient sur
   // l'ancienne valeur pendant la navigation serveur (pénible au clavier,
   // où chaque flèche déclenche un change).
@@ -51,7 +51,12 @@ export function MissionFilters({
   const sortAsc = optimistic.sort === "deadline_asc";
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    // data-pending : la liste (sibling) s'atténue pendant la navigation
+    // serveur — voir le group-has-[]: posé par la page.
+    <div
+      data-pending={isPending || undefined}
+      className="flex flex-wrap items-end gap-3"
+    >
       <div className="flex flex-col gap-1">
         <Label htmlFor="filtre-type" className="text-xs text-muted-foreground">
           Type
@@ -117,8 +122,6 @@ export function MissionFilters({
 
       <Button
         variant="outline"
-        size="sm"
-        className="h-9"
         onClick={() =>
           setParam("sort", sortAsc ? "deadline_desc" : "deadline_asc")
         }

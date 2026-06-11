@@ -34,7 +34,7 @@ export async function generateFactureAction(
   await requireOwner();
 
   const parsed = factureGenerateSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Saisie invalide" };
+  if (!parsed.success) return { ok: false, error: "Saisie invalide." };
 
   try {
     const { clientId, periode } = parsed.data;
@@ -113,11 +113,11 @@ export async function deleteFactureAction(
   await requireOwner();
 
   const parsed = factureDeleteSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Facture invalide" };
+  if (!parsed.success) return { ok: false, error: "Facture invalide." };
 
   try {
     const facture = await getFacture(parsed.data.id);
-    if (!facture) return { ok: false, error: "Facture introuvable" };
+    if (!facture) return { ok: false, error: "Facture introuvable." };
 
     const derniere = await latestFactureFor(facture.clientId, facture.periode);
     if (derniere?.id === facture.id) {

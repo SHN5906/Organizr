@@ -5,6 +5,7 @@ import {
 } from "@/components/calendar/calendar-marker";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { MonthNav } from "@/components/calendar/month-nav";
+import { Kbd } from "@/components/ui/kbd";
 import {
   buildMonthGrid,
   groupCalendarItems,
@@ -36,17 +37,21 @@ export default async function HomePage({
     <div className="flex flex-col gap-4">
       <MonthNav month={month} />
 
+      <MonthGrid grid={grid} itemsByDay={itemsByDay} />
+
+      {/* SOUS la grille : en feuilletant les mois, la grille ne saute pas.
+          Le raccourci clavier ne se montre qu'aux écrans à clavier. */}
       {items.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          Rien de planifié ce mois-ci. Appuie sur{" "}
-          <kbd className="rounded-sm border px-1.5 py-0.5 font-sans text-[11px]">
-            n
-          </kbd>{" "}
-          pour créer une mission.
+          Rien de planifié ce mois-ci.{" "}
+          <span className="hidden sm:inline">
+            Appuie sur <Kbd>n</Kbd> pour créer une mission.
+          </span>
+          <span className="sm:hidden">
+            Crée une mission avec le bouton +.
+          </span>
         </p>
       )}
-
-      <MonthGrid grid={grid} itemsByDay={itemsByDay} />
 
       <ul
         aria-label="Légende"

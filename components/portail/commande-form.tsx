@@ -129,7 +129,7 @@ export function CommandeForm({
         </p>
         <p className="text-sm text-muted-foreground">
           Elle apparaît dans ton historique ci-dessous et partira sur la
-          facture de {moisLabel} — le montage démarre de notre côté.
+          facture de {moisLabel} : le montage démarre de notre côté.
         </p>
         <Button
           variant="outline"
@@ -222,6 +222,10 @@ export function CommandeForm({
                       valueAsNumber: true,
                     })}
                   />
+                  <FieldError
+                    id={`${uid}-qte-${index}-error`}
+                    message={ligneErrors?.quantite?.message}
+                  />
                 </div>
                 <div className="flex flex-col items-end justify-end gap-0.5 text-right">
                   <span className="text-xs text-muted-foreground tabular-nums">
@@ -232,10 +236,6 @@ export function CommandeForm({
                   </span>
                 </div>
               </div>
-              <FieldError
-                id={`${uid}-qte-${index}-error`}
-                message={ligneErrors?.quantite?.message}
-              />
               <div className="flex items-start gap-2">
                 <div className="flex flex-1 flex-col gap-1.5">
                   <Label htmlFor={`${uid}-brief-${index}`}>
@@ -280,11 +280,27 @@ export function CommandeForm({
         })}
       </ul>
 
+      {/* L'ajout de ligne reste collé à la liste des lignes qu'il étend. */}
+      <div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => append({ type: "reel_simple", quantite: 1, brief: "" })}
+        >
+          <Plus aria-hidden data-icon="inline-start" />
+          Ajouter une ligne
+        </Button>
+      </div>
+
       <fieldset className="flex flex-col gap-3 border-y py-4">
         <legend className="sr-only">Tes fichiers</legend>
-        <p className="text-sm font-medium">
+        {/* Titre de section (pas un label) : un cran au-dessus des champs. */}
+        <p aria-hidden className="text-base font-medium">
           Tes fichiers{" "}
-          <span className="font-normal text-muted-foreground">(optionnel)</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            (optionnel)
+          </span>
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
@@ -300,12 +316,11 @@ export function CommandeForm({
                       aria-label={`Lien ${index + 1}`}
                       className="flex flex-col gap-1.5"
                     >
-                      <div className="flex items-start gap-1.5">
-                        <div className="flex w-2/5 flex-col gap-1">
-                          <Label
-                            htmlFor={`${uid}-lien-titre-${index}`}
-                            className="text-xs text-muted-foreground"
-                          >
+                      {/* flex-wrap : à l'étroit (mobile), le titre prend sa
+                          ligne et l'URL la suivante. */}
+                      <div className="flex flex-wrap items-start gap-1.5">
+                        <div className="flex w-full flex-col gap-1.5 sm:w-2/5">
+                          <Label htmlFor={`${uid}-lien-titre-${index}`}>
                             Titre du lien
                           </Label>
                           <Input
@@ -322,11 +337,8 @@ export function CommandeForm({
                             {...form.register(`liens.${index}.titre`)}
                           />
                         </div>
-                        <div className="flex flex-1 flex-col gap-1">
-                          <Label
-                            htmlFor={`${uid}-lien-url-${index}`}
-                            className="text-xs text-muted-foreground"
-                          >
+                        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                          <Label htmlFor={`${uid}-lien-url-${index}`}>
                             URL
                           </Label>
                           <Input
@@ -384,7 +396,7 @@ export function CommandeForm({
               message={errors.liens?.root?.message ?? errors.liens?.message}
             />
             <p className="text-xs text-muted-foreground">
-              Tes rushs, exports ou maquettes — un lien par transfert, avec un
+              Tes rushs, exports ou maquettes : un lien par transfert, avec un
               titre pour t&apos;y retrouver ({LIENS_MAX} max).
             </p>
           </div>
@@ -426,28 +438,20 @@ export function CommandeForm({
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              Un seul PDF, 5 Mo max — cadrages, exemples, consignes.
+              Un seul PDF, 5 Mo max : cadrages, exemples, consignes.
             </p>
           </div>
         </div>
       </fieldset>
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => append({ type: "reel_simple", quantite: 1, brief: "" })}
-        >
-          <Plus aria-hidden data-icon="inline-start" />
-          Ajouter une ligne
-        </Button>
-
+      <div className="flex flex-wrap items-end justify-end gap-4">
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
-            <Label htmlFor={`${uid}-tip`} className="text-muted-foreground">
+            <Label htmlFor={`${uid}-tip`}>
               Tip{" "}
-              <span className="font-normal">(optionnel)</span>
+              <span className="font-normal text-muted-foreground">
+                (optionnel)
+              </span>
             </Label>
             <Input
               id={`${uid}-tip`}
