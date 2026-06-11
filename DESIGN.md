@@ -31,13 +31,26 @@ medium, body 14, caption 12.5 muted. Dates en `tabular-nums`.
 
 ## Motion
 
-150 ms (hover/focus) et 200 ms (ouvertures) max, `--ease-out-quart`.
-Le mouvement signale un état, jamais une décoration.
+150 ms (hover/focus) et 200 ms (ouvertures) max, `--ease-out-quart` —
+appliqués PAR DÉFAUT via `--default-transition-*` dans `@theme` (pas
+d'opt-in par composant). `prefers-reduced-motion` coupe tout (globals.css).
 
 ## Composants
 
-Boutons : primary = encre pleine ; outline = filet ; ghost = nu. Suppression =
-outline + dialogue de confirmation (le sens vient du texte, pas d'un rouge).
-Liste missions : rangées réglées par filets (PAS le <Table> shadcn par défaut).
-États vides : une ligne d'explication + l'action suivante, jamais d'illustration.
-Focus visible : outline 2 px encre, offset 2 px.
+Boutons : primary = encre pleine ; outline = filet ; ghost = nu (hover et
+aria-expanded : `--accent`, jamais un gris inventé). Suppression = outline +
+dialogue de confirmation (le sens vient du texte, pas d'un rouge).
+Hauteurs : champs ET bouton default à h-9 (même règle) ; sm h-8 ; xs/icon-xs
+compacts (h-7) avec zone de clic étendue (after:-inset-1) pour tenir le
+plancher tactile. Raccourcis clavier : composant partagé `<Kbd>` (variante
+`inverse` sur fond encre), masqué sous `sm` (pas de conseil clavier au
+tactile). Liste missions : rangées réglées par filets (PAS le <Table> shadcn
+par défaut), hover `bg-accent`. Rangée de commande : composant partagé
+`components/commandes/commande-row.tsx` (facturation + espace client).
+États vides : une ligne d'explication + l'action suivante, jamais
+d'illustration. Focus visible : outline 2 px encre, offset 2 px (inversé en
+inset là où un conteneur `overflow-hidden` le rognerait : grille du
+calendrier, date-picker). Pages force-dynamic : chaque groupe de routes a un
+`loading.tsx` squelette (filets + pulsation motion-safe). Dates affichées
+depuis un timestamptz : TOUJOURS `formatInstantDayFr` (fuseau Europe/Paris),
+jamais `toISOString().slice` (jour UTC).

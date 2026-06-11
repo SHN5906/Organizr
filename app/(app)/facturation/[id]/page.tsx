@@ -5,8 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import { PrintButton } from "@/components/facturation/print-button";
 import { Button } from "@/components/ui/button";
 import { requireOwner } from "@/lib/auth/guards";
-import { getFacture } from "@/lib/data/factures";
-import { formatDayFr } from "@/lib/format";
+import { getFacture, listFacturesForPeriode } from "@/lib/data/factures";
+import { formatInstantDayFr } from "@/lib/format";
 import { formatCents, numericToCents } from "@/lib/pricing";
 import { periodeLabel } from "@/components/facturation/periode-nav";
 
@@ -23,6 +23,16 @@ export default async function FacturePage({
   const { id } = await params;
   const facture = await getFacture(id);
   if (!facture) notFound();
+
+  // « remplace FAC-… » : chaque révision a son propre numéro.
+  const remplacee =
+    facture.revision > 1
+      ? (await listFacturesForPeriode(facture.periode)).find(
+          (f) =>
+            f.clientId === facture.clientId &&
+            f.revision === facture.revision - 1,
+        )
+      : undefined;
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,7 +68,8 @@ export default async function FacturePage({
             </p>
             {facture.revision > 1 && (
               <p className="text-xs text-muted-foreground">
-                révision {facture.revision} — remplace la précédente
+                révision {facture.revision}
+                {remplacee ? ` · remplace ${remplacee.numero}` : ""}
               </p>
             )}
           </div>
@@ -77,11 +88,12 @@ export default async function FacturePage({
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Émise le</p>
             <p className="tabular-nums">
-              {formatDayFr(facture.createdAt.toISOString().slice(0, 10))}
+              {formatInstantDayFr(facture.createdAt)}
             </p>
           </div>
         </div>
 
+        <div className="overflow-x-auto print:overflow-visible">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-y text-left text-xs text-muted-foreground">
@@ -122,6 +134,7 @@ export default async function FacturePage({
             ))}
           </tbody>
         </table>
+        </div>
 
         <div className="mt-4 flex justify-end">
           <div className="flex w-56 items-baseline justify-between border-t-2 border-foreground pt-3">

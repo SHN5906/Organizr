@@ -1,25 +1,29 @@
 import type { Metadata } from "next";
-import { FichiersCommande } from "@/components/commandes/fichiers-commande";
+import {
+  CommandeRow,
+  totalCommandeCents,
+} from "@/components/commandes/commande-row";
 import { CommandeForm } from "@/components/portail/commande-form";
 import { periodeLabel } from "@/components/facturation/periode-nav";
 import { createCommandeAction } from "@/lib/actions/commandes";
 import { requireClient } from "@/lib/auth/guards";
 import { listCommandesForClient } from "@/lib/data/portal/commandes";
-import { formatInstantDayFr, periodeOf } from "@/lib/format";
+import { periodeOf } from "@/lib/format";
 import {
   formatCents,
   isDegressif,
-  numericToCents,
   PRESTATION_DESCRIPTIONS,
   PRESTATION_LABELS,
   TYPES_PRESTATION_AFFICHAGE,
   unitPriceCents,
 } from "@/lib/pricing";
-import { STATUT_COMMANDE_LABELS } from "@/lib/validation/labels";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Espace client" };
+// Titre absolu : l'onglet du client ne mentionne pas l'outil interne.
+export const metadata: Metadata = {
+  title: { absolute: "Espace client · ReNew Editing" },
+};
 
 export default async function EspacePage() {
   const clientId = await requireClient();
@@ -36,42 +40,57 @@ export default async function EspacePage() {
   }
   const mois = [...parMois.keys()].sort().reverse();
   const totalCommande = (commande: (typeof commandes)[number]) =>
-    commande.lignes.reduce((s, l) => s + numericToCents(l.total), 0) +
-    numericToCents(commande.tip);
+    totalCommandeCents(commande.lignes, commande.tip);
 
   return (
-    <div className="flex flex-col gap-10">
-      <section className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Ajouter à {moisLabel}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Tout ce que tu ajoutes ce mois-ci part sur la facture de {moisLabel}.
-        </p>
-        <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
+    <div className="flex flex-col gap-12">
+      <section className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Ajouter à {moisLabel}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Tout ce que tu ajoutes ce mois-ci part sur la facture de{" "}
+            {moisLabel}.
+          </p>
+        </div>
+
+        {/* Grille tarifaire : rangées réglées, prix alignés à droite —
+            le scan d'un tarif imprimé, pas un paragraphe à déchiffrer. */}
+        <ul className="divide-y border-y">
           {TYPES_PRESTATION_AFFICHAGE.map((t) => (
-            <li key={t}>
-              <span className="font-medium text-foreground">
-                {PRESTATION_LABELS[t]}
-              </span>{" "}
-              — {PRESTATION_DESCRIPTIONS[t]}{" "}
-              <span className="tabular-nums">
-                {!isDegressif(t)
-                  ? `${formatCents(unitPriceCents(t, 1))} / vidéo.`
-                  : `dès ${formatCents(unitPriceCents(t, 1))} / vidéo, dégressif
-                     jusqu'à ${formatCents(unitPriceCents(t, 30))} à partir de
-                     30 vidéos (par ligne de commande).`}
-              </span>
+            <li
+              key={t}
+              className="flex items-baseline justify-between gap-6 py-2.5"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{PRESTATION_LABELS[t]}</p>
+                <p className="text-xs text-muted-foreground">
+                  {PRESTATION_DESCRIPTIONS[t]}
+                </p>
+              </div>
+              <div className="shrink-0 text-right tabular-nums">
+                <p className="text-sm">
+                  {formatCents(unitPriceCents(t, 1))}{" "}
+                  <span className="text-muted-foreground">/ vidéo</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isDegressif(t)
+                    ? `dégressif par ligne : jusqu'à ${formatCents(unitPriceCents(t, 30))} à 30 vidéos`
+                    : "tarif unique"}
+                </p>
+              </div>
             </li>
           ))}
         </ul>
+
         <CommandeForm moisLabel={moisLabel} onSubmit={createCommandeAction} />
       </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-medium">Tes commandes</h2>
         {commandes.length === 0 ? (
-          <p className="border-y py-8 text-sm text-muted-foreground">
+          <p className="border-y py-12 text-center text-sm text-muted-foreground">
             Aucune commande pour l&apos;instant. Compose ta première commande
             ci-dessus.
           </p>
@@ -97,41 +116,17 @@ export default async function EspacePage() {
                   </div>
                   <ul className="divide-y border-y">
                     {commandesDuMois.map((commande) => (
-                      <li
+                      <CommandeRow
                         key={commande.id}
-                        className="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 gap-y-1 py-3"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium tabular-nums">
-                            Commande #{commande.numero}
-                            <span className="ml-2 text-xs font-normal text-muted-foreground">
-                              {formatInstantDayFr(commande.createdAt)}
-                            </span>
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {[
-                              ...commande.lignes.map(
-                                (l) =>
-                                  `${l.quantite} × ${PRESTATION_LABELS[l.type]}`,
-                              ),
-                              ...(numericToCents(commande.tip) > 0
-                                ? ["tip"]
-                                : []),
-                            ].join(" · ")}
-                          </p>
-                          <FichiersCommande
-                            liens={commande.liens}
-                            briefNom={commande.briefNom}
-                            commandeId={commande.id}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {STATUT_COMMANDE_LABELS[commande.statut]}
-                        </span>
-                        <span className="text-sm font-medium tabular-nums">
-                          {formatCents(totalCommande(commande))}
-                        </span>
-                      </li>
+                        commandeId={commande.id}
+                        numero={commande.numero}
+                        createdAt={commande.createdAt}
+                        lignes={commande.lignes}
+                        tip={commande.tip}
+                        statut={commande.statut}
+                        liens={commande.liens}
+                        briefNom={commande.briefNom}
+                      />
                     ))}
                   </ul>
                 </div>

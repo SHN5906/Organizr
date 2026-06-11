@@ -81,7 +81,7 @@ export function ClientFormDialog({
             <Input
               id={`${uid}-contact`}
               autoComplete="off"
-              placeholder="email, téléphone…"
+              placeholder="Email, téléphone…"
               {...form.register("contact")}
             />
           </div>

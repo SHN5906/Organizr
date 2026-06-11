@@ -13,9 +13,11 @@ function NativeSelect({
 }: React.ComponentProps<"select">) {
   return (
     <span className={cn("relative inline-flex w-full", className)}>
+      {/* Mêmes conventions champ qu'Input : 16 px sur mobile (anti-zoom
+          iOS), focus ring encre, invalide = bordure encre. */}
       <select
         data-slot="native-select"
-        className="border-input h-9 w-full appearance-none rounded-md border bg-transparent py-1 pr-8 pl-3 text-sm transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50"
+        className="border-input h-9 w-full appearance-none rounded-md border bg-transparent py-1 pr-8 pl-2.5 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-foreground md:text-sm"
         {...props}
       />
       <ChevronDown

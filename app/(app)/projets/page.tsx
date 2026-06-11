@@ -6,6 +6,7 @@ import {
   type InvitationRow,
 } from "@/components/projets/invite-client-dialog";
 import { ProjetFormDialog } from "@/components/projets/projet-form-dialog";
+import { CalendarMarker } from "@/components/calendar/calendar-marker";
 import { StatutBadge } from "@/components/missions/statut-badge";
 import { Button } from "@/components/ui/button";
 import { FichiersCommande } from "@/components/commandes/fichiers-commande";
@@ -110,6 +111,7 @@ export default async function ProjetsPage() {
                           {(fichiersParProjet.get(p.id) ?? []).map((f) => (
                             <FichiersCommande
                               key={f.commandeId}
+                              label={`Commande #${f.numero}`}
                               liens={f.liens}
                               briefNom={f.briefNom}
                               commandeId={f.commandeId}
@@ -119,10 +121,7 @@ export default async function ProjetsPage() {
                         <div className="text-xs text-muted-foreground tabular-nums">
                           {p.deadline ? (
                             <span className="inline-flex items-center gap-1.5">
-                              <span
-                                aria-hidden
-                                className="inline-block size-2 rotate-45 border border-foreground"
-                              />
+                              <CalendarMarker kind="deadline_projet" />
                               <span className="sr-only">Deadline le</span>
                               {formatDayFr(p.deadline)}
                             </span>
@@ -132,15 +131,28 @@ export default async function ProjetsPage() {
                         </div>
                         <StatutBadge
                           statut={p.statut}
-                          className="justify-self-end"
+                          className="col-span-2 justify-self-end md:col-span-1"
                         />
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="border-y py-4 text-xs text-muted-foreground">
-                    Aucun projet pour ce client.
-                  </p>
+                  <div className="flex items-center justify-between gap-3 border-y py-3">
+                    <p className="text-xs text-muted-foreground">
+                      Aucun projet pour ce client.
+                    </p>
+                    <ProjetFormDialog
+                      clients={[
+                        { id: client.id, nom: client.nom },
+                        ...clientOptions.filter((c) => c.id !== client.id),
+                      ]}
+                      trigger={
+                        <Button variant="outline" size="sm">
+                          Créer un projet
+                        </Button>
+                      }
+                    />
+                  </div>
                 )}
               </section>
             );

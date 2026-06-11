@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { FieldError } from "@/components/forms/field-error";
 import { Button } from "@/components/ui/button";
 import { loginClientAction } from "@/lib/actions/auth";
 import type { ActionResult } from "@/lib/actions/types";
@@ -17,30 +18,24 @@ export function ClientLoginGate({
   action?: (input: unknown) => Promise<ActionResult>;
 }) {
   const [error, setError] = React.useState<string | null>(null);
-  const [pending, setPending] = React.useState(false);
+  // useTransition : le pending couvre la redirection vers /espace.
+  const [pending, startTransition] = React.useTransition();
 
   return (
     <div className="flex flex-col items-start gap-3">
       <Button
         disabled={pending}
-        onClick={async () => {
-          setError(null);
-          setPending(true);
-          try {
+        onClick={() =>
+          startTransition(async () => {
+            setError(null);
             const result = await action({ token });
             if (result && !result.ok) setError(result.error);
-          } finally {
-            setPending(false);
-          }
-        }}
+          })
+        }
       >
         {pending ? "Ouverture…" : "Accéder à mon espace"}
       </Button>
-      {error && (
-        <p role="alert" className="text-sm font-medium">
-          {error}
-        </p>
-      )}
+      <FieldError message={error ?? undefined} />
     </div>
   );
 }

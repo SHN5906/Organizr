@@ -18,7 +18,7 @@ describe("MissionForm (création)", () => {
   it("bloque la soumission sans titre et affiche l'erreur", async () => {
     const onSubmit = vi.fn();
     render(<MissionForm projets={PROJETS} onSubmit={onSubmit} />);
-    await userEvent.click(screen.getByRole("button", { name: /ajouter/i }));
+    await userEvent.click(screen.getByRole("button", { name: /créer la mission/i }));
     expect(await screen.findByText(/champ requis/i)).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -30,7 +30,7 @@ describe("MissionForm (création)", () => {
 
     await userEvent.type(screen.getByLabelText(/titre/i), "Derush interview");
     await userEvent.selectOptions(screen.getByLabelText(/projet/i), PROJETS[0].id);
-    await userEvent.click(screen.getByRole("button", { name: /ajouter/i }));
+    await userEvent.click(screen.getByRole("button", { name: /créer la mission/i }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
@@ -48,7 +48,7 @@ describe("MissionForm (création)", () => {
     });
     render(<MissionForm projets={PROJETS} onSubmit={onSubmit} />);
     await userEvent.type(screen.getByLabelText(/titre/i), "X");
-    await userEvent.click(screen.getByRole("button", { name: /ajouter/i }));
+    await userEvent.click(screen.getByRole("button", { name: /créer la mission/i }));
     expect(await screen.findByText(/trop long pour un titre/i)).toBeInTheDocument();
   });
 
@@ -57,9 +57,9 @@ describe("MissionForm (création)", () => {
     const onSubmit = vi.fn().mockImplementation(() => new Promise((r) => (resolve = r)));
     render(<MissionForm projets={PROJETS} onSubmit={onSubmit} />);
     await userEvent.type(screen.getByLabelText(/titre/i), "Mix");
-    await userEvent.click(screen.getByRole("button", { name: /ajouter/i }));
+    await userEvent.click(screen.getByRole("button", { name: /créer la mission/i }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /ajout/i })).toBeDisabled(),
+      expect(screen.getByRole("button", { name: /création/i })).toBeDisabled(),
     );
     resolve({ ok: true });
   });

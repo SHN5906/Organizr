@@ -1,6 +1,5 @@
-import { LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { logoutClientAction, } from "@/lib/actions/auth";
+import { LogoutButton } from "@/components/shell/logout-button";
+import { logoutClientAction } from "@/lib/actions/auth";
 import { requireClient } from "@/lib/auth/guards";
 import { getClientById } from "@/lib/data/clients";
 
@@ -18,23 +17,18 @@ export default async function PortailLayout({
     <>
       <header className="border-b">
         <div className="mx-auto flex h-12 max-w-3xl items-center gap-3 px-4 md:px-8">
-          <span className="text-sm font-semibold tracking-tight">
+          <span className="shrink-0 text-sm font-semibold tracking-tight">
             ReNew Editing
           </span>
-          <span className="text-xs text-muted-foreground">Espace client</span>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
+          <span className="shrink-0 text-xs text-muted-foreground">
+            Espace client
+          </span>
+          <div className="ml-auto flex min-w-0 items-center gap-3">
+            <span className="min-w-0 truncate text-sm text-muted-foreground">
               {client?.nom}
             </span>
-            <form action={logoutClientAction}>
-              <Button
-                variant="ghost"
-                size="icon"
-                type="submit"
-                aria-label="Se déconnecter"
-              >
-                <LogOut aria-hidden className="size-4" />
-              </Button>
+            <form action={logoutClientAction} className="shrink-0">
+              <LogoutButton />
             </form>
           </div>
         </div>

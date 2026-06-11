@@ -65,7 +65,7 @@ beforeEach(async () => {
 describe("loginOwnerAction", () => {
   it("mauvais mot de passe → erreur, pas de cookie", async () => {
     const result = await loginOwnerAction({ password: "faux" });
-    expect(result).toMatchObject({ ok: false, error: "Mot de passe incorrect" });
+    expect(result).toMatchObject({ ok: false, error: "Mot de passe incorrect." });
     expect(jar.has(OWNER_COOKIE)).toBe(false);
   });
 

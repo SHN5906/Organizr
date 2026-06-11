@@ -64,9 +64,13 @@ test("commande client → missions chez l'owner → facture 154,00 €", async (
     pageA.getByText("Total TTC").locator(".."),
   ).toContainText("154,00 €");
 
-  // Catalogue : la vidéo essentiel (15 €, tarif unique) est proposée,
-  // dans la grille ET dans le select de prestation.
-  await expect(pageA.getByText("15,00 € / vidéo.")).toBeVisible();
+  // Catalogue : la vidéo essentielle (15 €, tarif unique) est proposée,
+  // dans la grille tarifaire ET dans le select de prestation.
+  const tarifEssentielle = pageA
+    .locator("li")
+    .filter({ hasText: "Montage essentiel" });
+  await expect(tarifEssentielle.getByText("15,00 €")).toBeVisible();
+  await expect(tarifEssentielle.getByText("tarif unique")).toBeVisible();
   await expect(
     ligne2.getByLabel("Prestation").locator("option", {
       hasText: "Vidéo essentiel",

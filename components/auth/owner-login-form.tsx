@@ -15,20 +15,18 @@ export function OwnerLoginForm({
 }) {
   const uid = React.useId();
   const [error, setError] = React.useState<string | null>(null);
-  const [pending, setPending] = React.useState(false);
+  // useTransition : en cas de succès l'action redirige — le pending tient
+  // jusqu'à l'arrivée sur la page suivante (pas de bouton ré-armé à vide).
+  const [pending, startTransition] = React.useTransition();
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const password = new FormData(e.currentTarget).get("password");
-    setError(null);
-    setPending(true);
-    try {
+    startTransition(async () => {
+      setError(null);
       const result = await action({ password });
-      // En cas de succès l'action redirige et ne retourne jamais.
       if (result && !result.ok) setError(result.error);
-    } finally {
-      setPending(false);
-    }
+    });
   }
 
   return (

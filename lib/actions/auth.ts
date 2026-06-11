@@ -47,13 +47,13 @@ export async function loginOwnerAction(
 ): Promise<ActionResult> {
   const parsed = ownerLoginSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: "Mot de passe requis" };
+    return { ok: false, error: "Mot de passe requis." };
   }
   if (!checkRateLimit(`owner-login:${await clientIp()}`, 10, 60_000)) {
     return { ok: false, error: "Trop de tentatives. Réessaie dans une minute." };
   }
   if (!safeEqual(parsed.data.password, getOwnerPassword())) {
-    return { ok: false, error: "Mot de passe incorrect" };
+    return { ok: false, error: "Mot de passe incorrect." };
   }
   const jar = await cookies();
   jar.set(
@@ -81,7 +81,7 @@ export async function inviteClientAction(
 ): Promise<ActionResult<{ url: string; expiresAt: string }>> {
   await requireOwner();
   const parsed = inviteSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Client invalide" };
+  if (!parsed.success) return { ok: false, error: "Client invalide." };
 
   try {
     const { token, expiresAt } = await createInvitation(parsed.data.clientId);
@@ -104,7 +104,7 @@ export async function revokeInvitationAction(
 ): Promise<ActionResult> {
   await requireOwner();
   const parsed = revokeSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Accès invalide" };
+  if (!parsed.success) return { ok: false, error: "Accès invalide." };
   try {
     await revokeInvitation(parsed.data.id);
     revalidatePath("/projets");

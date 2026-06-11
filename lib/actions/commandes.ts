@@ -67,7 +67,7 @@ export async function createCommandeAction(
     try {
       payload = JSON.parse(String(input.get("payload") ?? ""));
     } catch {
-      return { ok: false, error: "Saisie invalide" };
+      return { ok: false, error: "Saisie invalide." };
     }
     const candidate = input.get("brief");
     if (candidate instanceof File && candidate.size > 0) {
@@ -79,7 +79,7 @@ export async function createCommandeAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: "Saisie invalide",
+      error: "Saisie invalide.",
       fieldErrors: z.flattenError(parsed.error).fieldErrors as Record<
         string,
         string[]
@@ -91,7 +91,7 @@ export async function createCommandeAction(
   if (brief && !brief.ok) {
     return {
       ok: false,
-      error: "Saisie invalide",
+      error: "Saisie invalide.",
       fieldErrors: { brief: [brief.message] },
     };
   }

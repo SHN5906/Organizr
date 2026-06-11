@@ -23,7 +23,8 @@ export default async function AppLayout({
   return (
     <QuickAddProvider projets={options}>
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 md:px-8">
+      {/* print:p-0 : les marges papier viennent de @page, pas du layout. */}
+      <main className="mx-auto w-full max-w-6xl px-4 py-8 md:px-8 print:p-0">
         {children}
       </main>
     </QuickAddProvider>

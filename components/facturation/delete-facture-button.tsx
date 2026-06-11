@@ -29,8 +29,7 @@ export function DeleteFactureButton({
     <>
       <Button
         variant="ghost"
-        size="icon"
-        className="size-6"
+        size="icon-xs"
         aria-label={`Supprimer ${numero}`}
         onClick={() => setOpen(true)}
       >

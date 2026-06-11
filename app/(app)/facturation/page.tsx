@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FichiersCommande } from "@/components/commandes/fichiers-commande";
+import {
+  CommandeRow,
+  totalCommandeCents,
+} from "@/components/commandes/commande-row";
 import { DeleteFactureButton } from "@/components/facturation/delete-facture-button";
 import { GenerateFactureButton } from "@/components/facturation/generate-facture-button";
 import { PeriodeNav } from "@/components/facturation/periode-nav";
 import { requireOwner } from "@/lib/auth/guards";
 import { listCommandesForPeriode } from "@/lib/data/commandes";
 import { listFacturesForPeriode } from "@/lib/data/factures";
-import {
-  formatInstantDayFr,
-  parsePeriodeParam,
-  todayInAppZone,
-} from "@/lib/format";
-import { formatCents, numericToCents, PRESTATION_LABELS } from "@/lib/pricing";
+import { parsePeriodeParam, periodeOf, todayInAppZone } from "@/lib/format";
+import { formatCents, numericToCents } from "@/lib/pricing";
 import type { SearchParams } from "@/lib/search-params";
-import { STATUT_COMMANDE_LABELS } from "@/lib/validation/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -51,19 +49,35 @@ export default async function FacturationPage({
       <PeriodeNav periode={periode} />
 
       {parClient.size === 0 ? (
-        <div className="border-y py-12 text-center">
+        <div className="flex flex-col items-center gap-3 border-y py-12 text-center">
           <p className="text-sm text-muted-foreground">
             Aucune commande sur cette période.
           </p>
+          {periode !== periodeOf(new Date()) ? (
+            <Link
+              href="/facturation"
+              className="text-sm underline underline-offset-4 hover:text-muted-foreground"
+            >
+              Revenir à ce mois-ci
+            </Link>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Les commandes arrivent via l&apos;espace client :{" "}
+              <Link
+                href="/projets"
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                invite un client
+              </Link>{" "}
+              depuis Projets.
+            </p>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-8">
           {[...parClient.entries()].map(([clientId, entry]) => {
             const totalCents = entry.commandes.reduce(
-              (sum, c) =>
-                sum +
-                c.lignes.reduce((s, l) => s + numericToCents(l.total), 0) +
-                numericToCents(c.tip),
+              (sum, c) => sum + totalCommandeCents(c.lignes, c.tip),
               0,
             );
             const facturesClient = factures.filter(
@@ -88,46 +102,17 @@ export default async function FacturationPage({
 
                 <ul className="divide-y border-y">
                   {entry.commandes.map((commande) => (
-                    <li
+                    <CommandeRow
                       key={commande.id}
-                      className="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 gap-y-1 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium tabular-nums">
-                          Commande #{commande.numero}
-                          <span className="ml-2 text-xs font-normal text-muted-foreground">
-                            {formatInstantDayFr(commande.createdAt)}
-                          </span>
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {[
-                            ...commande.lignes.map(
-                              (l) =>
-                                `${l.quantite} × ${PRESTATION_LABELS[l.type]}`,
-                            ),
-                            ...(numericToCents(commande.tip) > 0
-                              ? ["tip"]
-                              : []),
-                          ].join(" · ")}
-                        </p>
-                        <FichiersCommande
-                          liens={commande.liens}
-                          briefNom={commande.briefNom}
-                          commandeId={commande.id}
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {STATUT_COMMANDE_LABELS[commande.statut]}
-                      </span>
-                      <span className="text-sm tabular-nums">
-                        {formatCents(
-                          commande.lignes.reduce(
-                            (s, l) => s + numericToCents(l.total),
-                            0,
-                          ) + numericToCents(commande.tip),
-                        )}
-                      </span>
-                    </li>
+                      commandeId={commande.id}
+                      numero={commande.numero}
+                      createdAt={commande.createdAt}
+                      lignes={commande.lignes}
+                      tip={commande.tip}
+                      statut={commande.statut}
+                      liens={commande.liens}
+                      briefNom={commande.briefNom}
+                    />
                   ))}
                 </ul>
 
